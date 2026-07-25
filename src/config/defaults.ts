@@ -41,8 +41,16 @@ export const defaultConfig: AnalyzerConfig = {
     "fragments"
   ],
   ignore: [
-    "**/*.test.tsx",
-    "**/*.test.jsx",
+    // Test code and fixtures repeat shapes and literals on purpose. Left in,
+    // they dominate the findings and bury the ones about production code.
+    "**/*.test.*",
+    "**/*.spec.*",
+    "**/test/**",
+    "**/tests/**",
+    "**/__tests__/**",
+    "**/__fixtures__/**",
+    "**/fixtures/**",
+    "**/examples/**",
     "**/*.stories.tsx",
     "**/*.stories.jsx",
     "**/__generated__/**",

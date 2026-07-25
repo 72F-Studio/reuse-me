@@ -77,6 +77,11 @@ function renderHealth(result: RepositoryHealthResult): string {
           ...result.missingAbstractions.map(
             (finding) =>
               `Missing abstraction: repeated pattern in ${finding.sourcePaths.join(", ")}`
+          ),
+          ...result.untokenizedValues.map((finding) =>
+            finding.reason === "bypassed"
+              ? `Token bypassed: ${finding.value} hardcoded in ${finding.sourcePaths.join(", ")} but declared as ${finding.tokenNames.join(", ")}`
+              : `Token candidate: ${finding.value} repeated in ${finding.sourcePaths.join(", ")} with no token declaring it`
           )
         ]
       : [])

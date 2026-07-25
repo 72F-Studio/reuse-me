@@ -21,7 +21,9 @@ import type { FeatureFact } from "../../model/featureFact";
 //
 // Both are deliberately shallow. They are review prompts, not proof.
 const CONSTRUCTED_SYMBOL = /\b([A-Z][A-Za-z0-9_]*)\s*[({]/gu;
-const HEX_COLOUR = /#[0-9a-fA-F]{3,8}\b/gu;
+// Only the lengths CSS actually defines (RGB, RGBA, RRGGBB, RRGGBBAA), and
+// never directly after an ampersand: `&#8600;` is an HTML entity, not a colour.
+const HEX_COLOUR = /(?<!&)#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})\b/gu;
 const PACKED_COLOUR = /\b0[xX][0-9a-fA-F]{6,8}\b/gu;
 // The optional inner dot covers Kotlin/Compose `8.dp`, where the unit is an
 // extension property rather than a suffix. `1.5rem` still parses as a decimal.

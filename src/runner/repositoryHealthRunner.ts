@@ -11,6 +11,8 @@ import {
   UnusedAbstractionDetector,
   hasReliableGraph
 } from "../analysis/unusedAbstractionDetector";
+import { UntokenizedValueDetector } from "../analysis/untokenizedValueDetector";
+import { findDesignTokens } from "../analysis/designTokenSource";
 import type { CapabilityReport } from "../model/capability";
 import type { RepositoryKnowledge } from "../model/repositoryKnowledge";
 import type {
@@ -33,6 +35,7 @@ export class RepositoryHealthRunner {
     private readonly unusedDetector = new UnusedAbstractionDetector(),
     private readonly competingDetector = new CompetingImplementationDetector(),
     private readonly missingDetector = new MissingAbstractionDetector(),
+    private readonly untokenizedDetector = new UntokenizedValueDetector(),
     private readonly resultAssembler = new RepositoryHealthResultAssembler()
   ) {}
 
@@ -75,6 +78,10 @@ export class RepositoryHealthRunner {
         knowledge.context,
         patterns,
         confidence
+      ),
+      untokenizedValues: this.untokenizedDetector.detect(
+        knowledge,
+        findDesignTokens(knowledge.context)
       )
     });
   }

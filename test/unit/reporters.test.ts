@@ -110,6 +110,7 @@ const healthResult: RepositoryHealthResult = {
   ],
   competingImplementations: [],
   missingAbstractions: [],
+  untokenizedValues: [],
   metadata: {
     findingCount: 1,
     declarationCount: 1,
@@ -202,6 +203,7 @@ describe("reporters", () => {
         unusedAbstractions: [],
         competingImplementations: [],
         missingAbstractions: [],
+        untokenizedValues: [],
         metadata: {
           findingCount: 0,
           declarationCount: 0,

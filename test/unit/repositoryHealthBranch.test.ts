@@ -312,7 +312,8 @@ describe("repository health branch", () => {
           }
         ],
         competingImplementations: [],
-        missingAbstractions: []
+        missingAbstractions: [],
+        untokenizedValues: []
       })
     ).toEqual({
       mode: "health",
@@ -336,6 +337,7 @@ describe("repository health branch", () => {
       ],
       competingImplementations: [],
       missingAbstractions: [],
+      untokenizedValues: [],
       metadata: {
         findingCount: 1,
         declarationCount: 1,

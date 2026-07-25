@@ -1,6 +1,7 @@
 import type {
   CompetingImplementationFinding,
   MissingAbstractionFinding,
+  UntokenizedValueFinding,
   UnusedAbstractionFinding
 } from "../model/repositoryHealthFinding";
 import type { CapabilityReport } from "../model/capability";
@@ -30,12 +31,14 @@ export class RepositoryHealthResultAssembler {
     unusedAbstractions: UnusedAbstractionFinding[];
     competingImplementations: CompetingImplementationFinding[];
     missingAbstractions: MissingAbstractionFinding[];
+    untokenizedValues: UntokenizedValueFinding[];
   }): RepositoryHealthResult {
     const findingCount =
       input.repositoryStructure.findings.length +
       input.unusedAbstractions.length +
       input.competingImplementations.length +
-      input.missingAbstractions.length;
+      input.missingAbstractions.length +
+      input.untokenizedValues.length;
 
     return {
       mode: "health",
@@ -48,6 +51,7 @@ export class RepositoryHealthResultAssembler {
       unusedAbstractions: input.unusedAbstractions,
       competingImplementations: input.competingImplementations,
       missingAbstractions: input.missingAbstractions,
+      untokenizedValues: input.untokenizedValues,
       metadata: {
         findingCount,
         ...input.semanticSummary

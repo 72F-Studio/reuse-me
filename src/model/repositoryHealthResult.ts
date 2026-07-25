@@ -1,6 +1,7 @@
 import type {
   CompetingImplementationFinding,
   MissingAbstractionFinding,
+  UntokenizedValueFinding,
   UnusedAbstractionFinding
 } from "./repositoryHealthFinding";
 import type { CapabilityReport } from "./capability";
@@ -28,6 +29,7 @@ export interface ReadyRepositoryHealthResult {
   unusedAbstractions: UnusedAbstractionFinding[];
   competingImplementations: CompetingImplementationFinding[];
   missingAbstractions: MissingAbstractionFinding[];
+  untokenizedValues: UntokenizedValueFinding[];
   metadata: {
     findingCount: number;
     declarationCount: number;

@@ -22,3 +22,15 @@ export interface MissingAbstractionFinding {
   sourcePaths: string[];
   evidence: string[];
 }
+
+// Health finding for a design value written as a literal rather than referenced
+// as a token. "bypassed" means a token with this exact value already exists;
+// "candidate" means enough files repeat the value that it behaves like one.
+export interface UntokenizedValueFinding {
+  kind: "untokenized-value";
+  reason: "bypassed" | "candidate";
+  value: string;
+  sourcePaths: string[];
+  tokenNames: string[];
+  evidence: string[];
+}

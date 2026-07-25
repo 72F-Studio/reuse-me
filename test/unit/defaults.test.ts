@@ -22,7 +22,9 @@ describe("defaultConfig", () => {
   it("defines ignore patterns", () => {
     expect(defaultConfig.ignore).toEqual(
       expect.arrayContaining([
-        "**/*.test.tsx",
+        "**/*.test.*",
+        "**/test/**",
+        "**/examples/**",
         "**/*.stories.tsx",
         "**/__generated__/**",
         "**/dist/**"
