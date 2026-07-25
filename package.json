@@ -10,7 +10,8 @@
     "build": "tsup src/cli.ts --format esm --clean",
     "dev": "tsx src/cli.ts",
     "test": "vitest run",
-    "benchmark": "npm run build && node scripts/benchmark.mjs"
+    "benchmark": "npm run build && node scripts/benchmark.mjs",
+    "benchmark:context": "npm run build && node scripts/context-benchmark.mjs"
   },
   "dependencies": {
     "commander": "^14.0.0",

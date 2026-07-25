@@ -340,6 +340,7 @@ describe("repository health branch", () => {
       untokenizedValues: [],
       metadata: {
         findingCount: 1,
+    omittedFindingCount: 0,
         declarationCount: 1,
         importCount: 0,
         relationshipCount: 0,
@@ -436,7 +437,8 @@ describe("repository health branch", () => {
     expect(result.intelligenceSignals.duplicateDeclarations).toEqual([
       {
         name: "Button",
-        paths: ["src/other/Button.ts", "src/shared/Button.ts"]
+        samplePaths: ["src/other/Button.ts", "src/shared/Button.ts"],
+        pathCount: 2
       }
     ]);
     expect(result.intelligenceSignals.unresolvedImports).toEqual([

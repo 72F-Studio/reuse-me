@@ -9,10 +9,12 @@
 // detection on planted duplication, not a survey of real repositories.
 
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, cpSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
+import { mkdtempSync, cpSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
+import { sourceBytes } from "./lib/sourceBytes.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const cli = join(repoRoot, "dist", "cli.js");
@@ -30,20 +32,6 @@ function stage(example) {
   return staged;
 }
 
-function sourceBytes(directory) {
-  let total = 0;
-
-  for (const entry of readdirSync(directory, { withFileTypes: true })) {
-    if (entry.name === ".git") {
-      continue;
-    }
-
-    const path = join(directory, entry.name);
-    total += entry.isDirectory() ? sourceBytes(path) : statSync(path).size;
-  }
-
-  return total;
-}
 
 const rows = [];
 let detected = 0;

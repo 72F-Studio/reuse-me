@@ -13,6 +13,9 @@ import type {
 } from "../model/repositoryHealthResult";
 import type { RepositoryStructureAnalysis } from "../model/repositoryStructure";
 
+// How many findings of each kind the report will carry.
+const FINDING_LIMIT = 20;
+
 // Packages repository health output for reporters.
 // Contains no detection policy or repository analysis.
 export class RepositoryHealthResultAssembler {
@@ -40,6 +43,33 @@ export class RepositoryHealthResultAssembler {
       input.missingAbstractions.length +
       input.untokenizedValues.length;
 
+    // Large repositories produce findings by the hundred. Nobody acts on
+    // eighty-four of anything, and on one real Swift repository the findings
+    // list alone was 68KB, which defeats the purpose of a summary. Each kind
+    // is capped at its strongest entries; findingCount stays the true total
+    // and omittedFindingCount says how many did not fit, so the cap is
+    // visible rather than a silent truncation.
+    const unusedAbstractions = input.unusedAbstractions.slice(0, FINDING_LIMIT);
+    const competingImplementations = [...input.competingImplementations]
+      .sort((a, b) => b.confidence - a.confidence)
+      .slice(0, FINDING_LIMIT);
+    const missingAbstractions = [...input.missingAbstractions]
+      .sort((a, b) => b.sourcePaths.length - a.sourcePaths.length)
+      .slice(0, FINDING_LIMIT);
+    const untokenizedValues = [...input.untokenizedValues]
+      .sort(
+        (a, b) =>
+          Number(b.reason === "bypassed") - Number(a.reason === "bypassed") ||
+          b.sourcePaths.length - a.sourcePaths.length
+      )
+      .slice(0, FINDING_LIMIT);
+    const omittedFindingCount =
+      input.unusedAbstractions.length -
+      unusedAbstractions.length +
+      (input.competingImplementations.length - competingImplementations.length) +
+      (input.missingAbstractions.length - missingAbstractions.length) +
+      (input.untokenizedValues.length - untokenizedValues.length);
+
     return {
       mode: "health",
       status: "ready",
@@ -48,12 +78,13 @@ export class RepositoryHealthResultAssembler {
       repository: input.repositoryStructure.summary,
       repositoryHeuristics: input.repositoryStructure.findings,
       intelligenceSignals: input.intelligenceSignals,
-      unusedAbstractions: input.unusedAbstractions,
-      competingImplementations: input.competingImplementations,
-      missingAbstractions: input.missingAbstractions,
-      untokenizedValues: input.untokenizedValues,
+      unusedAbstractions,
+      competingImplementations,
+      missingAbstractions,
+      untokenizedValues,
       metadata: {
         findingCount,
+        omittedFindingCount,
         ...input.semanticSummary
       }
     };

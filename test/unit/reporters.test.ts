@@ -113,6 +113,7 @@ const healthResult: RepositoryHealthResult = {
   untokenizedValues: [],
   metadata: {
     findingCount: 1,
+    omittedFindingCount: 0,
     declarationCount: 1,
     importCount: 0,
     relationshipCount: 0,
@@ -206,6 +207,7 @@ describe("reporters", () => {
         untokenizedValues: [],
         metadata: {
           findingCount: 0,
+          omittedFindingCount: 0,
           declarationCount: 0,
           importCount: 0,
           relationshipCount: 0,

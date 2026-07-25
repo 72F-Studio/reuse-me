@@ -88,17 +88,29 @@ From `npm run benchmark`, against the corpus in [`examples/`](examples):
 **4/4 languages detected. 0 false positives on the clean control. ~175ms per
 repository.**
 
-At real repository scale, on this repository's own `src/`:
+### Context saved
 
-| | |
-| --- | --- |
-| Source an agent would read to answer the same questions | 176K |
-| Report | 14K |
-| **Ratio** | **12.3x smaller** |
+From `npm run benchmark:context`, against real public repositories pinned to
+tags in [`benchmarks/corpus.json`](benchmarks/corpus.json):
 
-On the toy examples above the report is *larger* than the source, because it
-is a fixed-shape summary. The ratio only becomes favourable at real size. The
-benchmark prints both rather than quoting the flattering one.
+| Repository | Language | Files | Source | Report | Ratio |
+| --- | --- | ---: | ---: | ---: | ---: |
+| preact `10.25.4` | TypeScript / JavaScript | 238 | 1267K | 14K | 88.8x |
+| vue-core `v3.5.13` | TypeScript | 525 | 3898K | 26K | 152.8x |
+| requests `v2.32.3` | Python | 36 | 368K | 10K | 38.0x |
+| okhttp `5.0.0-alpha.14` | Kotlin / Java | 549 | 4017K | 33K | 120.4x |
+| swift-composable-architecture `1.17.1` | Swift | 820 | 2273K | 54K | 42.3x |
+
+**Median 88.8x smaller across 5 repositories (range 38x–153x)**, 11.8MB of
+source summarised into 137K, under a second each.
+
+The denominator is every source file the analyzer can read — what an agent
+would otherwise open to answer the questions the report answers. READMEs,
+lockfiles and binaries are excluded from both sides.
+
+On the toy examples above, the report is *larger* than the source it
+describes. The ratio only becomes favourable at real size, and the benchmark
+prints both rather than quoting the flattering one.
 
 ## Why it works in any language
 
@@ -218,8 +230,9 @@ and are what makes the defaults work outside JavaScript. `sharedSourceDirs` /
 ## Development
 
 ```bash
-npm test           # 120 tests
-npm run benchmark  # cross-language corpus + scale measurement
+npm test                   # 134 tests
+npm run benchmark          # detection across the example corpus
+npm run benchmark:context  # context saved on real repositories (needs network)
 npx tsc --noEmit
 ```
 

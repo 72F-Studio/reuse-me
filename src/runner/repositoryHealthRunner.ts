@@ -199,11 +199,12 @@ function duplicateDeclarationSignals(
   return [...pathsByName.entries()]
     .map(([name, paths]) => ({
       name,
-      paths: [...paths].sort()
+      samplePaths: [...paths].sort().slice(0, 5),
+      pathCount: paths.size
     }))
-    .filter((entry) => entry.paths.length > 1)
+    .filter((entry) => entry.pathCount > 1)
     .sort(
-      (a, b) => b.paths.length - a.paths.length || a.name.localeCompare(b.name)
+      (a, b) => b.pathCount - a.pathCount || a.name.localeCompare(b.name)
     )
     .slice(0, 10);
 }

@@ -1,0 +1,36 @@
+{
+  "note": "Real public repositories, pinned to tags, used to measure how much context the report saves against reading the source it summarises. Chosen for language spread and for cloning quickly; none is a UI-heavy application, so these numbers describe the summary ratio rather than how many findings the tool produces. Shallow clones total roughly 90MB.",
+  "cacheDirectory": ".benchmark-cache",
+  "repositories": [
+    {
+      "name": "preact",
+      "language": "TypeScript / JavaScript",
+      "repo": "https://github.com/preactjs/preact.git",
+      "ref": "10.25.4"
+    },
+    {
+      "name": "vue-core",
+      "language": "TypeScript",
+      "repo": "https://github.com/vuejs/core.git",
+      "ref": "v3.5.13"
+    },
+    {
+      "name": "requests",
+      "language": "Python",
+      "repo": "https://github.com/psf/requests.git",
+      "ref": "v2.32.3"
+    },
+    {
+      "name": "okhttp",
+      "language": "Kotlin / Java",
+      "repo": "https://github.com/square/okhttp.git",
+      "ref": "parent-5.0.0-alpha.14"
+    },
+    {
+      "name": "swift-composable-architecture",
+      "language": "Swift",
+      "repo": "https://github.com/pointfreeco/swift-composable-architecture.git",
+      "ref": "1.17.1"
+    }
+  ]
+}

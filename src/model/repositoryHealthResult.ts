@@ -32,6 +32,9 @@ export interface ReadyRepositoryHealthResult {
   untokenizedValues: UntokenizedValueFinding[];
   metadata: {
     findingCount: number;
+    // Findings beyond the per-kind cap. Nonzero means the report is a
+    // summary, not the complete list.
+    omittedFindingCount: number;
     declarationCount: number;
     importCount: number;
     relationshipCount: number;
@@ -109,5 +112,11 @@ export interface UnresolvedImportSignal {
 
 export interface DuplicateDeclarationSignal {
   name: string;
-  paths: string[];
+  // Sampled, not exhaustive. A common declaration name in a large repository
+  // appears in hundreds of files, and emitting every path made this one signal
+  // larger than the rest of the report put together, which defeats the point
+  // of handing an agent a summary. Matches the shape unresolvedImports already
+  // uses.
+  samplePaths: string[];
+  pathCount: number;
 }

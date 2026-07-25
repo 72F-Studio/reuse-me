@@ -51,6 +51,10 @@ export const defaultConfig: AnalyzerConfig = {
     "**/__fixtures__/**",
     "**/fixtures/**",
     "**/examples/**",
+    // Documentation catalogues. Tutorial snippets are step-by-step variants of
+    // one file and are near-identical on purpose, so they dominate findings
+    // while describing nothing about the shipped code.
+    "**/*.docc/**",
     "**/*.stories.tsx",
     "**/*.stories.jsx",
     "**/__generated__/**",

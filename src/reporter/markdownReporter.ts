@@ -123,7 +123,13 @@ function renderHealth(result: RepositoryHealthResult): string {
                   finding.reason === "bypassed"
                     ? `- Token bypassed: \`${finding.value}\` hardcoded in ${finding.sourcePaths.join(", ")} but declared as ${finding.tokenNames.join(", ")}`
                     : `- Token candidate: \`${finding.value}\` repeated in ${finding.sourcePaths.join(", ")} with no token declaring it`
-                )
+                ),
+                ...(result.metadata.omittedFindingCount > 0
+                  ? [
+                      "",
+                      `_${result.metadata.omittedFindingCount} further findings not shown (report is capped per finding kind)._`
+                    ]
+                  : [])
               ]
             : [])
         ]),
@@ -147,7 +153,7 @@ function formatIntelligenceSignals(
     ),
     ...insights.duplicateDeclarations.slice(0, 5).map(
       (signal) =>
-        `- Duplicate declaration: ${signal.name} (${signal.paths.length} files)`
+        `- Duplicate declaration: ${signal.name} (${signal.pathCount} files)`
     )
   ];
 
