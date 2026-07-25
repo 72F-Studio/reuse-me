@@ -1,0 +1,12 @@
+{
+  "name": "component-intent-audit",
+  "description": "Audit repository health, declarations, usage, and component intent with deterministic static signals.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Component Intent Audit"
+  },
+  "license": "UNLICENSED",
+  "keywords": ["repository", "static-analysis", "audit", "components"],
+  "commands": "commands/",
+  "skills": "skills/"
+}

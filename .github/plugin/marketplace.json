@@ -1,0 +1,18 @@
+{
+  "name": "component-intent-audit",
+  "description": "Static repository health, declaration, usage, and component-intent audit.",
+  "owner": {
+    "name": "Component Intent Audit"
+  },
+  "plugins": [
+    {
+      "name": "component-intent-audit",
+      "description": "Maps repository structure, declarations, relationships, usage, drift, and component-intent signals without model calls.",
+      "source": "./",
+      "category": "productivity",
+      "tags": ["repository", "static-analysis", "audit", "components"],
+      "commands": "commands/",
+      "skills": "skills/"
+    }
+  ]
+}

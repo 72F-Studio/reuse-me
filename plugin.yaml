@@ -1,0 +1,10 @@
+name: component-intent-audit
+version: 0.1.0
+description: Repository health, declaration, usage, and component-intent audit for Hermes Agent, bundled skill, and slash command.
+author: Component Intent Audit
+provides_hooks:
+  - pre_gateway_dispatch
+provides_commands:
+  - component-intent-audit
+provides_skills:
+  - component-intent-audit

@@ -1,0 +1,20 @@
+{
+  "name": "component-intent-audit",
+  "interface": {
+    "displayName": "Component Intent Audit"
+  },
+  "plugins": [
+    {
+      "name": "component-intent-audit",
+      "source": {
+        "source": "local",
+        "path": "../.."
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

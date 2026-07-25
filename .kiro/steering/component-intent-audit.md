@@ -1,0 +1,18 @@
+---
+title: Component Intent Audit
+inclusion: manual
+---
+
+# Component Intent Audit
+
+Use when asked for repository health, declarations/usages, component intent,
+shared-component drift, repeated local UI, or `component-intent-audit`.
+
+Run `component-intent-audit --health --json` by default. Run
+`component-intent-audit --diff --json` for current changes. If the binary is
+not on `PATH`, use `COMPONENT_INTENT_AUDIT_BIN` or the built CLI from this
+checkout.
+
+Summarize repository intelligence coverage, findings, and intelligence signals
+with file paths. Prefer analyzer output before opening source files. Do not
+apply fixes unless the user asks.

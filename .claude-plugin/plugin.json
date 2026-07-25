@@ -1,0 +1,8 @@
+{
+  "name": "component-intent-audit",
+  "version": "0.1.0",
+  "description": "Audit repository health, declarations, usage, and component intent with deterministic static signals.",
+  "author": {
+    "name": "Component Intent Audit"
+  }
+}
