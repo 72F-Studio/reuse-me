@@ -87,6 +87,27 @@ Roles come from the import graph and from directory names matched anywhere in
 a path — `ui/components`, `lib/widgets`, `Sources/DesignSystem`, a top-level
 `components/`. Not from a hardcoded `src/components` prefix.
 
+## The other half: tokens
+
+A duplicated button matters less if its colour was hardcoded in all four
+places to begin with. The same run reports design values written as literals:
+
+```
+Token bypassed: 0xff3b82f6 hardcoded in ui/screens/LoginScreen.kt,
+  ui/screens/ProfileScreen.kt, ui/screens/SignupScreen.kt
+  but declared as BrandPrimary
+Token candidate: 11px repeated in 14 files with no token declaring it
+```
+
+`bypassed` means the repository already names that value and the code wrote
+the literal anyway — so changing the token will not change this file, which is
+exactly how a design system stops working. `candidate` means the value repeats
+often enough to deserve a name.
+
+Token declarations are read by convention from `tailwind.config.*`,
+`colors.xml`, `tokens.json`, CSS custom properties, SCSS variables, Compose
+theme files and Swift colour extensions.
+
 ## What it refuses to do
 
 The tool reports what it cannot see rather than reporting nothing and letting
