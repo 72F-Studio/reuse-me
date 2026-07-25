@@ -1,6 +1,6 @@
-import { readdirSync } from "node:fs";
 import { basename, dirname, join, relative } from "node:path";
 
+import { readDirSafe } from "../fs/safeReaddir";
 import { languageForPath } from "../discovery/languageDetector";
 import type { RepositoryContext } from "../model/repository";
 import type {
@@ -57,6 +57,7 @@ export class RepositoryStructureAnalyzer {
 
     return {
       summary: {
+        rootPath: context.rootPath,
         fileCount: tree.files.length,
         directoryCount: tree.directories.length,
         sourceFileCount: sourceFiles.length,
@@ -76,7 +77,7 @@ function walk(rootPath: string): { files: string[]; directories: string[] } {
   const directories: string[] = [];
 
   function visit(directory: string): void {
-    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    for (const entry of readDirSafe(directory)) {
       if (entry.isDirectory() && IGNORED_DIRECTORIES.has(entry.name)) {
         continue;
       }

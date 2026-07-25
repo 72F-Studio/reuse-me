@@ -1,6 +1,7 @@
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { join, relative } from "node:path";
 
+import { readDirSafe } from "../../fs/safeReaddir";
 import type { RepositoryContext } from "../../model/repository";
 import type { SourceFileCandidate } from "./sourceFileCandidate";
 
@@ -59,7 +60,7 @@ export class SourceFileDiscovery {
 function walkFiles(directory: string): string[] {
   const files: string[] = [];
 
-  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+  for (const entry of readDirSafe(directory)) {
     const absolutePath = join(directory, entry.name);
 
     if (entry.isDirectory()) {

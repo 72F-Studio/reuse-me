@@ -117,7 +117,7 @@ function formatRepositoryHeuristics(
 }
 
 function formatRepository(repository: RepositoryStructureSummary): string {
-  return `${repository.fileCount} files, ${repository.sourceFileCount} source files, ${repository.directoryCount} directories`;
+  return `${repository.rootPath}: ${repository.fileCount} files, ${repository.sourceFileCount} source files, ${repository.directoryCount} directories`;
 }
 
 function formatIntelligence(intelligence: RepositoryIntelligenceReport): string[] {

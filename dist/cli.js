@@ -812,8 +812,19 @@ var ChangeAnalysisRunner = class {
 };
 
 // src/discovery/languageDetector.ts
-import { readdirSync } from "fs";
 import { join, relative } from "path";
+
+// src/fs/safeReaddir.ts
+import { readdirSync } from "fs";
+function readDirSafe(directory) {
+  try {
+    return readdirSync(directory, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+}
+
+// src/discovery/languageDetector.ts
 var LANGUAGE_BY_EXTENSION = {
   ".kt": { id: "kotlin", name: "Kotlin" },
   ".kts": { id: "kotlin", name: "Kotlin" },
@@ -861,7 +872,7 @@ var LanguageDetector = class {
 };
 function walkFiles(rootPath, directory) {
   const files = [];
-  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+  for (const entry of readDirSafe(directory)) {
     if (entry.isDirectory() && IGNORED_DIRECTORIES.has(entry.name)) {
       continue;
     }
@@ -882,7 +893,7 @@ function languageForPath(path) {
 }
 
 // src/extractors/generic-declarations/GenericDeclarationsExtractor.ts
-import { readFileSync, readdirSync as readdirSync2 } from "fs";
+import { readFileSync } from "fs";
 import { basename, extname, join as join2, normalize, relative as relative2 } from "path";
 import { dirname as posixDirname, join as posixJoin, normalize as posixNormalize } from "path/posix";
 var LANGUAGES = [
@@ -984,7 +995,7 @@ var GenericDeclarationsExtractor = class {
 function discoverSourceFiles(context) {
   const files = [];
   function visit3(directory) {
-    for (const entry of readdirSync2(directory, { withFileTypes: true })) {
+    for (const entry of readDirSafe(directory)) {
       if (entry.isDirectory() && IGNORED_DIRECTORIES2.has(entry.name)) {
         continue;
       }
@@ -1960,7 +1971,7 @@ function isComponentLikeFunction(node) {
 }
 
 // src/extractors/typescript-react/sourceFileDiscovery.ts
-import { existsSync, readdirSync as readdirSync3 } from "fs";
+import { existsSync } from "fs";
 import { join as join4, relative as relative3 } from "path";
 var SUPPORTED_EXTENSIONS = [".tsx", ".jsx", ".ts", ".js"];
 var SourceFileDiscovery = class {
@@ -1997,7 +2008,7 @@ var SourceFileDiscovery = class {
 };
 function walkFiles2(directory) {
   const files = [];
-  for (const entry of readdirSync3(directory, { withFileTypes: true })) {
+  for (const entry of readDirSafe(directory)) {
     const absolutePath = join4(directory, entry.name);
     if (entry.isDirectory()) {
       files.push(...walkFiles2(absolutePath));
@@ -2322,7 +2333,6 @@ function roleHintsFor2(sourceFile, uiFile) {
 }
 
 // src/analysis/repositoryStructureAnalyzer.ts
-import { readdirSync as readdirSync4 } from "fs";
 import { basename as basename2, dirname as dirname3, join as join6, relative as relative4 } from "path";
 var IGNORED_DIRECTORIES3 = /* @__PURE__ */ new Set([
   ".agents",
@@ -2385,7 +2395,7 @@ function walk(rootPath) {
   const files = [];
   const directories = [];
   function visit3(directory) {
-    for (const entry of readdirSync4(directory, { withFileTypes: true })) {
+    for (const entry of readDirSafe(directory)) {
       if (entry.isDirectory() && IGNORED_DIRECTORIES3.has(entry.name)) {
         continue;
       }
@@ -2652,18 +2662,48 @@ function assertOptionalBoolean(value, fieldName) {
 // src/git/repoRoot.ts
 function findRepositoryRoot(startPath) {
   const resolvedStart = resolve(startPath);
-  const searchedPaths = [];
   let currentPath = resolvedStart;
   while (true) {
-    searchedPaths.push(currentPath);
     if (fs.existsSync(join8(currentPath, ".git"))) {
       return currentPath;
     }
     const parentPath = dirname4(currentPath);
     if (parentPath === currentPath) {
-      throw new Error(
-        `No Git repository found from "${resolvedStart}". Searched: ${searchedPaths.join(" -> ")}`
-      );
+      return resolveFallbackRoot(resolvedStart);
+    }
+    currentPath = parentPath;
+  }
+}
+function resolveFallbackRoot(startPath) {
+  const resolvedStart = resolve(startPath);
+  return nearestManifestRoot(resolvedStart) ?? resolvedStart;
+}
+var ROOT_MARKER_FILENAMES = [
+  "package.json",
+  "pyproject.toml",
+  "go.mod",
+  "Cargo.toml",
+  "build.gradle",
+  "build.gradle.kts",
+  "settings.gradle",
+  "settings.gradle.kts",
+  "pom.xml",
+  "Package.swift",
+  "pubspec.yaml",
+  "Gemfile",
+  "composer.json"
+];
+function nearestManifestRoot(startPath) {
+  let currentPath = startPath;
+  while (true) {
+    if (ROOT_MARKER_FILENAMES.some(
+      (filename) => fs.existsSync(join8(currentPath, filename))
+    )) {
+      return currentPath;
+    }
+    const parentPath = dirname4(currentPath);
+    if (parentPath === currentPath) {
+      return void 0;
     }
     currentPath = parentPath;
   }

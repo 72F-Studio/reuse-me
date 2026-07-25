@@ -33,6 +33,7 @@ const capabilities = [
 ];
 const repositoryStructure = {
   summary: {
+    rootPath: "/repo",
     fileCount: 1,
     directoryCount: 1,
     sourceFileCount: 1,

@@ -1,4 +1,7 @@
 export interface RepositoryStructureSummary {
+  // Absolute path that was actually analysed. Reported so a surprising root —
+  // an outer Git repository, a parent checkout — is visible instead of silent.
+  rootPath: string;
   fileCount: number;
   directoryCount: number;
   sourceFileCount: number;

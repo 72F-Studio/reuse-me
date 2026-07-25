@@ -1,13 +1,14 @@
 import * as fs from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
 import { CONFIG_FILENAME } from "../../src/config/loadConfig";
 import {
   discoverRepositoryContext,
-  findRepositoryRoot
+  findRepositoryRoot,
+  resolveFallbackRoot
 } from "../../src/git/repoRoot";
 import { defaultConfig } from "../../src/config/defaults";
 
@@ -47,13 +48,45 @@ describe("findRepositoryRoot", () => {
     expect(findRepositoryRoot(nestedPath)).toBe(rootPath);
   });
 
-  it("throws a clear error when no git repository exists", () => {
-    const nestedPath = "/component-intent-audit-no-git/nested/deeper";
+  it("prefers the git root over a nested manifest", () => {
+    const rootPath = createTempDir();
+    const nestedPath = join(rootPath, "packages", "web");
 
-    expect(() => findRepositoryRoot(nestedPath)).toThrow(
-      `No Git repository found from "${nestedPath}"`
-    );
-    expect(() => findRepositoryRoot(nestedPath)).toThrow(dirname(nestedPath));
+    createGitRepo(rootPath);
+    fs.mkdirSync(nestedPath, { recursive: true });
+    fs.writeFileSync(join(nestedPath, "package.json"), "{}\n");
+
+    expect(findRepositoryRoot(nestedPath)).toBe(rootPath);
+  });
+});
+
+describe("resolveFallbackRoot", () => {
+  it("falls back to the nearest project manifest", () => {
+    const rootPath = createTempDir();
+    const nestedPath = join(rootPath, "app", "src");
+
+    fs.mkdirSync(nestedPath, { recursive: true });
+    fs.writeFileSync(join(rootPath, "pubspec.yaml"), "name: demo\n");
+
+    expect(resolveFallbackRoot(nestedPath)).toBe(rootPath);
+  });
+
+  it("recognises manifests from several ecosystems", () => {
+    for (const filename of ["go.mod", "Cargo.toml", "pom.xml", "Package.swift"]) {
+      const rootPath = createTempDir();
+      const nestedPath = join(rootPath, "nested");
+
+      fs.mkdirSync(nestedPath, { recursive: true });
+      fs.writeFileSync(join(rootPath, filename), "");
+
+      expect(resolveFallbackRoot(nestedPath)).toBe(rootPath);
+    }
+  });
+
+  it("falls back to the starting path when nothing marks a root", () => {
+    const nestedPath = "/component-intent-audit-no-root/nested/deeper";
+
+    expect(resolveFallbackRoot(nestedPath)).toBe(nestedPath);
   });
 });
 

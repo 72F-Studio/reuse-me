@@ -1,7 +1,8 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { basename, dirname, extname, join, normalize, relative } from "node:path";
 import { dirname as posixDirname, join as posixJoin, normalize as posixNormalize } from "node:path/posix";
 
+import { readDirSafe } from "../../fs/safeReaddir";
 import { languageForPath } from "../../discovery/languageDetector";
 import type {
   ExtractionResult,
@@ -148,7 +149,7 @@ function discoverSourceFiles(context: RepositoryContext): string[] {
   const files: string[] = [];
 
   function visit(directory: string): void {
-    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    for (const entry of readDirSafe(directory)) {
       if (entry.isDirectory() && IGNORED_DIRECTORIES.has(entry.name)) {
         continue;
       }

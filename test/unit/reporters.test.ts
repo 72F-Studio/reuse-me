@@ -22,6 +22,7 @@ const capabilities = [
 ];
 
 const repository = {
+  rootPath: "/repo",
   fileCount: 3,
   directoryCount: 2,
   sourceFileCount: 3,

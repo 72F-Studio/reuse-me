@@ -1,6 +1,6 @@
-import { readdirSync } from "node:fs";
 import { join, relative } from "node:path";
 
+import { readDirSafe } from "../fs/safeReaddir";
 import type { Language } from "../model/language";
 import type { RepositoryContext } from "../model/repository";
 
@@ -60,7 +60,7 @@ export class LanguageDetector {
 function walkFiles(rootPath: string, directory: string): string[] {
   const files: string[] = [];
 
-  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+  for (const entry of readDirSafe(directory)) {
     if (entry.isDirectory() && IGNORED_DIRECTORIES.has(entry.name)) {
       continue;
     }
