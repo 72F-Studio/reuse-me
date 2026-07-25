@@ -129,7 +129,7 @@ describe("repository health branch", () => {
           { category: "structure", key: "intrinsic", value: "button" },
           { category: "style", key: "className", value: "primary" }
         ],
-        names: []
+        names: ["button"]
       }
     ]);
   });
@@ -180,6 +180,7 @@ describe("repository health branch", () => {
       },
       rank: 1,
       score: 0.9,
+      candidateFeatureCount: 5,
       reasons: ["similarity score"]
     };
     const confidence: ConfidenceScore = {

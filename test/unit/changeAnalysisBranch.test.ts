@@ -220,6 +220,7 @@ describe("change analysis branch", () => {
             },
             rank: 1,
             score: 0.2,
+            candidateFeatureCount: 5,
             reasons: []
           }
         ],

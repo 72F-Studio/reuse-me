@@ -254,7 +254,8 @@ describe("shared reasoning", () => {
         evidence: {
           structureOverlap: 1,
           styleOverlap: 1,
-          nameOverlap: 1
+          nameOverlap: 1,
+          candidateFeatureCount: 3
         }
       }
     ]);
@@ -295,6 +296,7 @@ describe("shared reasoning", () => {
             },
             rank: 1,
             score: 0.8,
+            candidateFeatureCount: 5,
             reasons: ["similarity score"]
           },
           {
@@ -306,6 +308,7 @@ describe("shared reasoning", () => {
             },
             rank: 2,
             score: 0.7,
+            candidateFeatureCount: 5,
             reasons: ["similarity score"]
           }
         ],

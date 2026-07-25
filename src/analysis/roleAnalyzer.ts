@@ -6,13 +6,15 @@ import type { RoleFact } from "../model/role";
 export class RoleAnalyzer {
   analyze(knowledge: RepositoryKnowledge): RoleFact[] {
     const roles: RoleFact[] = [];
+    const graphCarriesSignal = hasResolvedRelationships(knowledge);
 
     for (const facts of knowledge.allFacts()) {
       const usage = knowledge.usageForPath(facts.path);
       const fileRole = fileRoleForPath(
         knowledge,
         facts.path,
-        usage?.fileReferenceCount ?? 0
+        usage?.fileReferenceCount ?? 0,
+        graphCarriesSignal
       );
 
       roles.push(fileRole);
@@ -38,10 +40,23 @@ export class RoleAnalyzer {
   }
 }
 
+// Whether the import graph resolved anything at all.
+//
+// Reference counts only mean something once imports actually resolve. In a
+// repository where nothing resolves, every file has zero references, and
+// treating that as evidence would classify the entire codebase as local.
+// Better to emit "unknown" and let the report say the graph is thin.
+function hasResolvedRelationships(knowledge: RepositoryKnowledge): boolean {
+  return knowledge
+    .relationships()
+    .some((relationship) => relationship.resolution === "resolved");
+}
+
 function fileRoleForPath(
   knowledge: RepositoryKnowledge,
   path: string,
-  referenceCount: number
+  referenceCount: number,
+  graphCarriesSignal: boolean
 ): RoleFact {
   const artifact = knowledge.artifactForPath(path);
   const hasSharedHint =
@@ -90,6 +105,20 @@ function fileRoleForPath(
       path,
       role: "unknown",
       reasons: [...localReasons, "referenced by multiple files"]
+    };
+  }
+
+  // Language-independent local evidence: nothing in the repository imports
+  // this file, so it is a leaf. Directory names like "screens" or "pages" are
+  // a JavaScript web convention; a Kotlin, Swift or Go repository has no such
+  // folder, and before this rule those repositories produced no local files,
+  // therefore no repeated patterns, therefore no findings at all.
+  if (graphCarriesSignal && referenceCount === 0) {
+    return {
+      scope: "file",
+      path,
+      role: "local",
+      reasons: ["no repository file imports this"]
     };
   }
 

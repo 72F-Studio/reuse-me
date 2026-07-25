@@ -4,6 +4,8 @@ import { dirname as posixDirname, join as posixJoin, normalize as posixNormalize
 
 import { readDirSafe } from "../../fs/safeReaddir";
 import { languageForPath } from "../../discovery/languageDetector";
+import { roleHintsForPath } from "../../discovery/roleHints";
+import { extractGenericFeatures } from "./genericFeatureExtractor";
 import type {
   ExtractionResult,
   ExtractorDescriptor,
@@ -212,7 +214,10 @@ function parseFile(context: RepositoryContext, path: string): ParsedFile {
         .filter((declaration) => declaration.visibility === "exported")
         .map(toExportFact),
       declarations: declarationFacts,
-      features: []
+      features: extractGenericFeatures(
+        stripped,
+        declarations.map((declaration) => declaration.name)
+      )
     }
   };
 }
@@ -485,29 +490,8 @@ function toArtifact(
     path: file.path,
     language: file.language,
     extractorId: DESCRIPTOR.id,
-    roleHints: roleHintsFor(context, file.path)
+    roleHints: roleHintsForPath(context, file.path)
   };
-}
-
-function roleHintsFor(
-  context: RepositoryContext,
-  path: string
-): SourceArtifact["roleHints"] {
-  const normalizedPath = normalizePath(path);
-
-  for (const directory of context.config.sharedSourceDirs) {
-    if (normalizedPath.startsWith(`${normalizePath(directory)}/`)) {
-      return [{ role: "shared", reason: "shared source directory" }];
-    }
-  }
-
-  for (const directory of context.config.localSourceDirs) {
-    if (normalizedPath.startsWith(`${normalizePath(directory)}/`)) {
-      return [{ role: "local", reason: "local source directory" }];
-    }
-  }
-
-  return [];
 }
 
 function toExportFact(declaration: DeclarationFact): ExportFact {

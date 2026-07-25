@@ -10,5 +10,9 @@ export interface SimilarityResult {
     structureOverlap: number;
     styleOverlap: number;
     nameOverlap: number;
+    // How many comparable features the candidate itself carries. A candidate
+    // with almost no shape is trivially contained in anything, so confidence
+    // policy needs to see this to discount it.
+    candidateFeatureCount: number;
   };
 }

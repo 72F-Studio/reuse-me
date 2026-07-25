@@ -11,6 +11,35 @@ export const defaultConfig: AnalyzerConfig = {
     "src/common"
   ],
   localSourceDirs: ["src/screens", "src/pages", "src/routes", "src/views"],
+  sharedDirNames: [
+    "components",
+    "component",
+    "ui",
+    "design-system",
+    "designsystem",
+    "design_system",
+    "shared",
+    "common",
+    "widgets",
+    "controls",
+    "atoms",
+    "molecules",
+    "organisms",
+    "theme",
+    "tokens"
+  ],
+  localDirNames: [
+    "screens",
+    "screen",
+    "pages",
+    "page",
+    "routes",
+    "views",
+    "features",
+    "scenes",
+    "activities",
+    "fragments"
+  ],
   ignore: [
     "**/*.test.tsx",
     "**/*.test.jsx",

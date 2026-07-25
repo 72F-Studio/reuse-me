@@ -17,16 +17,29 @@ export class SimilarityScorer {
     for (const pattern of patterns) {
       for (const candidate of candidates) {
         const facts = knowledge.factsForPath(candidate.path);
+        const candidateStructure = featureIds(facts?.features ?? [], "structure");
+        const candidateStyle = featureIds(facts?.features ?? [], "style");
         const evidence = {
-          structureOverlap: overlap(
-            featureIds(pattern.features, "structure"),
-            featureIds(facts?.features ?? [], "structure")
+          structureOverlap: containment(
+            candidateStructure,
+            featureIds(pattern.features, "structure")
           ),
-          styleOverlap: overlap(
-            featureIds(pattern.features, "style"),
-            featureIds(facts?.features ?? [], "style")
+          styleOverlap: containment(
+            candidateStyle,
+            featureIds(pattern.features, "style")
           ),
-          nameOverlap: pattern.names.includes(candidate.name) ? 1 : 0
+          candidateFeatureCount: new Set([
+            ...candidateStructure,
+            ...candidateStyle
+          ]).size,
+          // Compared case-insensitively on purpose: local code that renders a
+          // `button` element or constructs a `button` is evidence about a
+          // shared component named `Button`.
+          nameOverlap: pattern.names.some(
+            (name) => name.toLowerCase() === candidate.name.toLowerCase()
+          )
+            ? 1
+            : 0
         };
 
         results.push({
@@ -54,16 +67,27 @@ function featureIds(
     .map((feature) => `${feature.key}:${feature.value}`);
 }
 
-function overlap(left: string[], right: string[]): number {
-  const leftSet = new Set(left);
-  const rightSet = new Set(right);
+// How much of the candidate abstraction reappears inside the observed pattern.
+//
+// This is deliberately asymmetric. The question is not "are these two things
+// the same size and shape" but "does this local code re-implement that shared
+// component". A screen that wraps a copied button in a card and a heading
+// contains everything the shared Button is, plus extra of its own — and it is
+// exactly the case the tool exists to catch.
+//
+// A symmetric measure counted that extra against the match: with Jaccard, one
+// wrapping <div> dropped a verbatim re-implementation of a five-class button
+// from a match to 0.66, under the 0.7 warning threshold. The bigger the
+// surrounding screen, the more invisible the duplication became.
+function containment(candidateFeatures: string[], patternFeatures: string[]): number {
+  const candidateSet = new Set(candidateFeatures);
+  const patternSet = new Set(patternFeatures);
 
-  if (leftSet.size === 0 || rightSet.size === 0) {
+  if (candidateSet.size === 0 || patternSet.size === 0) {
     return 0;
   }
 
-  const intersection = [...leftSet].filter((value) => rightSet.has(value)).length;
-  const union = new Set([...leftSet, ...rightSet]).size;
+  const shared = [...candidateSet].filter((value) => patternSet.has(value)).length;
 
-  return intersection / union;
+  return shared / candidateSet.size;
 }

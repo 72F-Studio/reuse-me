@@ -18,6 +18,8 @@ type ConfigFieldName = keyof UserConfig;
 const CONFIG_KEYS: ConfigFieldName[] = [
   "sharedSourceDirs",
   "localSourceDirs",
+  "sharedDirNames",
+  "localDirNames",
   "sharedComponentDirs",
   "screenDirs",
   "ignore",
@@ -74,6 +76,8 @@ function validateUserConfig(value: unknown): UserConfig {
 
   assertOptionalStringArray(config.sharedSourceDirs, "sharedSourceDirs");
   assertOptionalStringArray(config.localSourceDirs, "localSourceDirs");
+  assertOptionalStringArray(config.sharedDirNames, "sharedDirNames");
+  assertOptionalStringArray(config.localDirNames, "localDirNames");
   assertOptionalStringArray(config.sharedComponentDirs, "sharedComponentDirs");
   assertOptionalStringArray(config.screenDirs, "screenDirs");
   assertOptionalStringArray(config.ignore, "ignore");

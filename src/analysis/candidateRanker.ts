@@ -23,6 +23,7 @@ export class CandidateRanker {
           candidate: result.candidate,
           rank: index + 1,
           score: result.score,
+          candidateFeatureCount: result.evidence.candidateFeatureCount,
           reasons: reasonsFor(result, roles, usage)
         });
       });

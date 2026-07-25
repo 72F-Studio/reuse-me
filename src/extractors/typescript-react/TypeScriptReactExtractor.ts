@@ -1,6 +1,7 @@
 import { join } from "node:path";
 
 import { RepositoryFactsIndexBuilder } from "../../analysis/repositoryFactsIndexBuilder";
+import { roleHintsForPath } from "../../discovery/roleHints";
 import type {
   ExtractionResult,
   ExtractorDescriptor,
@@ -62,7 +63,7 @@ export class TypeScriptReactExtractor implements RepositoryExtractor {
 
   extract(context: RepositoryContext): ExtractionResult {
     const sourceFiles = this.sourceDiscovery.discover(context);
-    const artifacts = this.toArtifacts(sourceFiles);
+    const artifacts = this.toArtifacts(context, sourceFiles);
     const facts = sourceFiles.map((sourceFile) =>
       this.buildFacts(context.rootPath, sourceFile)
     );
@@ -75,7 +76,10 @@ export class TypeScriptReactExtractor implements RepositoryExtractor {
     };
   }
 
-  private toArtifacts(sourceFiles: SourceFileCandidate[]): SourceArtifact[] {
+  private toArtifacts(
+    context: RepositoryContext,
+    sourceFiles: SourceFileCandidate[]
+  ): SourceArtifact[] {
     const changedFiles = sourceFiles.map((sourceFile) => ({
       path: sourceFile.path,
       status: "modified" as const
@@ -88,7 +92,7 @@ export class TypeScriptReactExtractor implements RepositoryExtractor {
     );
 
     return sourceFiles.map((sourceFile) =>
-      toSourceArtifact(sourceFile, uiFilesByPath.get(sourceFile.path))
+      toSourceArtifact(context, sourceFile, uiFilesByPath.get(sourceFile.path))
     );
   }
 
@@ -115,6 +119,7 @@ export class TypeScriptReactExtractor implements RepositoryExtractor {
 }
 
 function toSourceArtifact(
+  context: RepositoryContext,
   sourceFile: SourceFileCandidate,
   uiFile: UiFile | undefined
 ): SourceArtifact {
@@ -124,11 +129,12 @@ function toSourceArtifact(
       ? JAVASCRIPT
       : TYPESCRIPT,
     extractorId: DESCRIPTOR.id,
-    roleHints: roleHintsFor(sourceFile, uiFile)
+    roleHints: roleHintsFor(context, sourceFile, uiFile)
   };
 }
 
 function roleHintsFor(
+  context: RepositoryContext,
   sourceFile: SourceFileCandidate,
   uiFile: UiFile | undefined
 ): SourceArtifact["roleHints"] {
@@ -140,5 +146,5 @@ function roleHintsFor(
     return [{ role: "local", reason: "local source directory" }];
   }
 
-  return [];
+  return roleHintsForPath(context, sourceFile.path);
 }

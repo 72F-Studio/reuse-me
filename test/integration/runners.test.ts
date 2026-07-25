@@ -89,7 +89,9 @@ describe("mode runners", () => {
         sourcePaths: ["src/pages/A.tsx", "src/pages/B.tsx"],
         candidatePath: "src/components/Button.tsx",
         candidateName: "Button",
-        confidence: 0.8,
+        // Full confidence: structure, style and name all overlap. Before the
+        // pattern detector populated names this capped at 0.8.
+        confidence: 1,
         evidence: ["similarity score", "shared role"]
       }
     ]);

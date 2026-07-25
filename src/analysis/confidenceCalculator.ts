@@ -25,7 +25,15 @@ export class ConfidenceCalculator {
         runnerUp !== undefined && top.score - runnerUp.score < 0.15 ? 0.2 : 0;
       const weakPatternPenalty =
         pattern !== undefined && pattern.sourcePaths.length < 2 ? 0.2 : 0;
-      const score = clamp(top.score - ambiguityPenalty - weakPatternPenalty);
+      // Containment rewards a candidate whose whole shape reappears in the
+      // pattern. A candidate with a single feature is contained in almost
+      // anything, so it must not score as a confident match on that basis
+      // alone. Two features is already specific enough to mean something —
+      // a button with one element and one class is a real component.
+      const thinCandidatePenalty = top.candidateFeatureCount < 2 ? 0.3 : 0;
+      const score = clamp(
+        top.score - ambiguityPenalty - weakPatternPenalty - thinCandidatePenalty
+      );
 
       scores.push({
         patternId,
@@ -35,7 +43,8 @@ export class ConfidenceCalculator {
         reasons: [
           ...top.reasons,
           ...(ambiguityPenalty > 0 ? ["ambiguous candidates"] : []),
-          ...(weakPatternPenalty > 0 ? ["weak pattern evidence"] : [])
+          ...(weakPatternPenalty > 0 ? ["weak pattern evidence"] : []),
+          ...(thinCandidatePenalty > 0 ? ["thin candidate evidence"] : [])
         ]
       });
     }

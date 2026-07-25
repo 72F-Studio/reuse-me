@@ -445,6 +445,7 @@ var CandidateRanker = class {
           candidate: result.candidate,
           rank: index + 1,
           score: result.score,
+          candidateFeatureCount: result.evidence.candidateFeatureCount,
           reasons: reasonsFor(result, roles, usage)
         });
       });
@@ -583,7 +584,10 @@ var ConfidenceCalculator = class {
       const pattern = patterns.find((entry) => entry.id === patternId);
       const ambiguityPenalty = runnerUp !== void 0 && top.score - runnerUp.score < 0.15 ? 0.2 : 0;
       const weakPatternPenalty = pattern !== void 0 && pattern.sourcePaths.length < 2 ? 0.2 : 0;
-      const score = clamp(top.score - ambiguityPenalty - weakPatternPenalty);
+      const thinCandidatePenalty = top.candidateFeatureCount < 2 ? 0.3 : 0;
+      const score = clamp(
+        top.score - ambiguityPenalty - weakPatternPenalty - thinCandidatePenalty
+      );
       scores.push({
         patternId,
         candidatePath: top.candidate.path,
@@ -592,7 +596,8 @@ var ConfidenceCalculator = class {
         reasons: [
           ...top.reasons,
           ...ambiguityPenalty > 0 ? ["ambiguous candidates"] : [],
-          ...weakPatternPenalty > 0 ? ["weak pattern evidence"] : []
+          ...weakPatternPenalty > 0 ? ["weak pattern evidence"] : [],
+          ...thinCandidatePenalty > 0 ? ["thin candidate evidence"] : []
         ]
       });
     }
@@ -617,12 +622,14 @@ function clamp(value) {
 var RoleAnalyzer = class {
   analyze(knowledge) {
     const roles = [];
+    const graphCarriesSignal = hasResolvedRelationships(knowledge);
     for (const facts of knowledge.allFacts()) {
       const usage = knowledge.usageForPath(facts.path);
       const fileRole = fileRoleForPath(
         knowledge,
         facts.path,
-        usage?.fileReferenceCount ?? 0
+        usage?.fileReferenceCount ?? 0,
+        graphCarriesSignal
       );
       roles.push(fileRole);
       for (const declaration of facts.declarations) {
@@ -643,7 +650,10 @@ var RoleAnalyzer = class {
     );
   }
 };
-function fileRoleForPath(knowledge, path, referenceCount) {
+function hasResolvedRelationships(knowledge) {
+  return knowledge.relationships().some((relationship) => relationship.resolution === "resolved");
+}
+function fileRoleForPath(knowledge, path, referenceCount, graphCarriesSignal) {
   const artifact = knowledge.artifactForPath(path);
   const hasSharedHint = artifact?.roleHints.some((hint) => hint.role === "shared") ?? false;
   const hasLocalHint = artifact?.roleHints.some((hint) => hint.role === "local") ?? false;
@@ -681,6 +691,14 @@ function fileRoleForPath(knowledge, path, referenceCount) {
       reasons: [...localReasons, "referenced by multiple files"]
     };
   }
+  if (graphCarriesSignal && referenceCount === 0) {
+    return {
+      scope: "file",
+      path,
+      role: "local",
+      reasons: ["no repository file imports this"]
+    };
+  }
   return {
     scope: "file",
     path,
@@ -696,16 +714,27 @@ var SimilarityScorer = class {
     for (const pattern of patterns) {
       for (const candidate of candidates) {
         const facts = knowledge.factsForPath(candidate.path);
+        const candidateStructure = featureIds(facts?.features ?? [], "structure");
+        const candidateStyle = featureIds(facts?.features ?? [], "style");
         const evidence = {
-          structureOverlap: overlap(
-            featureIds(pattern.features, "structure"),
-            featureIds(facts?.features ?? [], "structure")
+          structureOverlap: containment(
+            candidateStructure,
+            featureIds(pattern.features, "structure")
           ),
-          styleOverlap: overlap(
-            featureIds(pattern.features, "style"),
-            featureIds(facts?.features ?? [], "style")
+          styleOverlap: containment(
+            candidateStyle,
+            featureIds(pattern.features, "style")
           ),
-          nameOverlap: pattern.names.includes(candidate.name) ? 1 : 0
+          candidateFeatureCount: (/* @__PURE__ */ new Set([
+            ...candidateStructure,
+            ...candidateStyle
+          ])).size,
+          // Compared case-insensitively on purpose: local code that renders a
+          // `button` element or constructs a `button` is evidence about a
+          // shared component named `Button`.
+          nameOverlap: pattern.names.some(
+            (name) => name.toLowerCase() === candidate.name.toLowerCase()
+          ) ? 1 : 0
         };
         results.push({
           patternId: pattern.id,
@@ -721,15 +750,14 @@ var SimilarityScorer = class {
 function featureIds(features, category) {
   return features.filter((feature) => feature.category === category).map((feature) => `${feature.key}:${feature.value}`);
 }
-function overlap(left, right) {
-  const leftSet = new Set(left);
-  const rightSet = new Set(right);
-  if (leftSet.size === 0 || rightSet.size === 0) {
+function containment(candidateFeatures, patternFeatures) {
+  const candidateSet = new Set(candidateFeatures);
+  const patternSet = new Set(patternFeatures);
+  if (candidateSet.size === 0 || patternSet.size === 0) {
     return 0;
   }
-  const intersection = [...leftSet].filter((value) => rightSet.has(value)).length;
-  const union = (/* @__PURE__ */ new Set([...leftSet, ...rightSet])).size;
-  return intersection / union;
+  const shared = [...candidateSet].filter((value) => patternSet.has(value)).length;
+  return shared / candidateSet.size;
 }
 
 // src/analysis/sourceOfTruthWarningGenerator.ts
@@ -896,6 +924,82 @@ function languageForPath(path) {
 import { readFileSync } from "fs";
 import { basename, extname, join as join2, normalize, relative as relative2 } from "path";
 import { dirname as posixDirname, join as posixJoin, normalize as posixNormalize } from "path/posix";
+
+// src/discovery/roleHints.ts
+function roleHintsForPath(context, path) {
+  const normalizedPath = normalizePath(path);
+  for (const directory of context.config.sharedSourceDirs) {
+    if (normalizedPath.startsWith(`${normalizePath(directory)}/`)) {
+      return [{ role: "shared", reason: "shared source directory" }];
+    }
+  }
+  for (const directory of context.config.localSourceDirs) {
+    if (normalizedPath.startsWith(`${normalizePath(directory)}/`)) {
+      return [{ role: "local", reason: "local source directory" }];
+    }
+  }
+  return hintsFromDirectoryNames(context, normalizedPath);
+}
+function hintsFromDirectoryNames(context, normalizedPath) {
+  const shared = new Set(
+    context.config.sharedDirNames.map((name) => name.toLowerCase())
+  );
+  const local = new Set(
+    context.config.localDirNames.map((name) => name.toLowerCase())
+  );
+  const segments = normalizedPath.split("/").slice(0, -1).reverse();
+  for (const segment of segments) {
+    const name = segment.toLowerCase();
+    if (shared.has(name)) {
+      return [{ role: "shared", reason: `shared directory name "${segment}"` }];
+    }
+    if (local.has(name)) {
+      return [{ role: "local", reason: `local directory name "${segment}"` }];
+    }
+  }
+  return [];
+}
+function normalizePath(path) {
+  return path.replaceAll("\\", "/");
+}
+
+// src/extractors/generic-declarations/genericFeatureExtractor.ts
+var CONSTRUCTED_SYMBOL = /\b([A-Z][A-Za-z0-9_]*)\s*[({]/gu;
+var HEX_COLOUR = /#[0-9a-fA-F]{3,8}\b/gu;
+var PACKED_COLOUR = /\b0[xX][0-9a-fA-F]{6,8}\b/gu;
+var DIMENSION = /\b\d+(?:\.\d+)?\.?(?:dp|sp|px|rem|em|pt|vh|vw)\b/gu;
+var CLASS_ATTRIBUTE = /\b(?:class|className)\s*[:=]\s*["'`]([^"'`]{1,300})["'`]/gu;
+function extractGenericFeatures(source, declaredNames = []) {
+  const features = /* @__PURE__ */ new Map();
+  const declared = new Set(declaredNames);
+  const add2 = (feature) => {
+    features.set(`${feature.category}:${feature.key}:${feature.value}`, feature);
+  };
+  for (const [, symbol] of source.matchAll(CONSTRUCTED_SYMBOL)) {
+    if (!declared.has(symbol)) {
+      add2({ category: "structure", key: "constructs", value: symbol });
+    }
+  }
+  for (const [colour] of source.matchAll(HEX_COLOUR)) {
+    add2({ category: "style", key: "color", value: colour.toLowerCase() });
+  }
+  for (const [colour] of source.matchAll(PACKED_COLOUR)) {
+    add2({ category: "style", key: "color", value: colour.toLowerCase() });
+  }
+  for (const [dimension] of source.matchAll(DIMENSION)) {
+    add2({ category: "style", key: "dimension", value: dimension.toLowerCase() });
+  }
+  for (const [, classList] of source.matchAll(CLASS_ATTRIBUTE)) {
+    for (const className of classList.split(/\s+/u)) {
+      if (className !== "") {
+        add2({ category: "style", key: "className", value: className });
+      }
+    }
+  }
+  return [...features.values()];
+}
+
+// src/extractors/generic-declarations/GenericDeclarationsExtractor.ts
 var LANGUAGES = [
   { id: "c", name: "C" },
   { id: "cpp", name: "C++" },
@@ -1001,7 +1105,7 @@ function discoverSourceFiles(context) {
         continue;
       }
       const absolutePath = join2(directory, entry.name);
-      const repositoryPath = normalizePath(relative2(context.rootPath, absolutePath));
+      const repositoryPath = normalizePath2(relative2(context.rootPath, absolutePath));
       if (entry.isDirectory()) {
         visit3(absolutePath);
       } else if (entry.isFile() && isSupportedSourcePath(repositoryPath, context)) {
@@ -1039,7 +1143,10 @@ function parseFile(context, path) {
       imports: extractImports(stripped, language.id),
       exports: declarationFacts.filter((declaration) => declaration.visibility === "exported").map(toExportFact),
       declarations: declarationFacts,
-      features: []
+      features: extractGenericFeatures(
+        stripped,
+        declarations.map((declaration) => declaration.name)
+      )
     }
   };
 }
@@ -1238,22 +1345,8 @@ function toArtifact(context, file) {
     path: file.path,
     language: file.language,
     extractorId: DESCRIPTOR.id,
-    roleHints: roleHintsFor(context, file.path)
+    roleHints: roleHintsForPath(context, file.path)
   };
-}
-function roleHintsFor(context, path) {
-  const normalizedPath = normalizePath(path);
-  for (const directory of context.config.sharedSourceDirs) {
-    if (normalizedPath.startsWith(`${normalizePath(directory)}/`)) {
-      return [{ role: "shared", reason: "shared source directory" }];
-    }
-  }
-  for (const directory of context.config.localSourceDirs) {
-    if (normalizedPath.startsWith(`${normalizePath(directory)}/`)) {
-      return [{ role: "local", reason: "local source directory" }];
-    }
-  }
-  return [];
 }
 function toExportFact(declaration) {
   return {
@@ -1540,7 +1633,7 @@ function escapeRegExp(value) {
 function lastName(value) {
   return value.split(/[./\\:]+/u).filter(Boolean).at(-1) ?? value;
 }
-function normalizePath(path) {
+function normalizePath2(path) {
   return normalize(path).replaceAll("\\", "/");
 }
 
@@ -1972,44 +2065,57 @@ function isComponentLikeFunction(node) {
 }
 
 // src/extractors/typescript-react/sourceFileDiscovery.ts
-import { existsSync } from "fs";
 import { join as join4, relative as relative3 } from "path";
 var SUPPORTED_EXTENSIONS = [".tsx", ".jsx", ".ts", ".js"];
 var SourceFileDiscovery = class {
+  // Walks the whole repository and keeps the files that carry a role hint.
+  //
+  // Discovery used to visit only the configured `sharedSourceDirs` and
+  // `localSourceDirs`, whose defaults are `src/components` and `src/screens`.
+  // A Next.js App Router project keeps components in a top-level `components/`
+  // and a Vite project in `src/ui`; neither matched, so the React provider
+  // reported itself unsupported and the repository silently lost all JSX and
+  // style intelligence. Role hints already know every convention, so discovery
+  // asks them rather than repeating a directory list.
   discover(context) {
-    const candidates = /* @__PURE__ */ new Map();
-    for (const directory of context.config.sharedSourceDirs) {
-      this.addDirectoryCandidates(
-        candidates,
-        context,
-        directory,
-        "sharedSourceDir"
+    const candidates = [];
+    for (const absolutePath of walkFiles2(context.rootPath)) {
+      const repositoryPath = normalizePath3(
+        relative3(context.rootPath, absolutePath)
       );
-    }
-    for (const directory of context.config.localSourceDirs) {
-      this.addDirectoryCandidates(candidates, context, directory, "localSourceDir");
-    }
-    return [...candidates.values()].sort((a, b) => a.path.localeCompare(b.path));
-  }
-  addDirectoryCandidates(candidates, context, configuredDirectory, discoveredFrom) {
-    const absoluteDirectory = join4(context.rootPath, configuredDirectory);
-    if (!existsSync(absoluteDirectory)) {
-      return;
-    }
-    for (const absolutePath of walkFiles2(absoluteDirectory)) {
-      const repositoryPath = normalizePath2(relative3(context.rootPath, absolutePath));
-      if (isSupportedSourceFile(repositoryPath) && !isIgnored2(repositoryPath, context.config.ignore)) {
-        candidates.set(repositoryPath, {
+      if (!isSupportedSourceFile(repositoryPath) || isIgnored2(repositoryPath, context.config.ignore)) {
+        continue;
+      }
+      const role = roleHintsForPath(context, repositoryPath)[0]?.role;
+      if (role === "shared" || role === "local") {
+        candidates.push({
           path: repositoryPath,
-          discoveredFrom
+          discoveredFrom: role === "shared" ? "sharedSourceDir" : "localSourceDir"
         });
       }
     }
+    return candidates.sort((a, b) => a.path.localeCompare(b.path));
   }
 };
+var IGNORED_DIRECTORIES3 = /* @__PURE__ */ new Set([
+  ".git",
+  ".next",
+  ".nuxt",
+  ".svelte-kit",
+  "build",
+  "coverage",
+  "dist",
+  "node_modules",
+  "out",
+  "target",
+  "vendor"
+]);
 function walkFiles2(directory) {
   const files = [];
   for (const entry of readDirSafe(directory)) {
+    if (entry.isDirectory() && IGNORED_DIRECTORIES3.has(entry.name)) {
+      continue;
+    }
     const absolutePath = join4(directory, entry.name);
     if (entry.isDirectory()) {
       files.push(...walkFiles2(absolutePath));
@@ -2045,7 +2151,7 @@ function globToRegExp2(pattern) {
 function escapeRegExp2(value) {
   return value.replace(/[.+^${}()|[\]\\]/gu, "\\$&");
 }
-function normalizePath2(path) {
+function normalizePath3(path) {
   return path.replaceAll("\\", "/");
 }
 
@@ -2273,7 +2379,7 @@ var TypeScriptReactExtractor = class {
   }
   extract(context) {
     const sourceFiles = this.sourceDiscovery.discover(context);
-    const artifacts = this.toArtifacts(sourceFiles);
+    const artifacts = this.toArtifacts(context, sourceFiles);
     const facts = sourceFiles.map(
       (sourceFile) => this.buildFacts(context.rootPath, sourceFile)
     );
@@ -2284,7 +2390,7 @@ var TypeScriptReactExtractor = class {
       relationships: this.relationshipAnalyzer.analyze(factsIndex)
     };
   }
-  toArtifacts(sourceFiles) {
+  toArtifacts(context, sourceFiles) {
     const changedFiles = sourceFiles.map((sourceFile) => ({
       path: sourceFile.path,
       status: "modified"
@@ -2296,7 +2402,7 @@ var TypeScriptReactExtractor = class {
       ])
     );
     return sourceFiles.map(
-      (sourceFile) => toSourceArtifact(sourceFile, uiFilesByPath.get(sourceFile.path))
+      (sourceFile) => toSourceArtifact(context, sourceFile, uiFilesByPath.get(sourceFile.path))
     );
   }
   buildFacts(rootPath, sourceFile) {
@@ -2316,27 +2422,27 @@ var TypeScriptReactExtractor = class {
     });
   }
 };
-function toSourceArtifact(sourceFile, uiFile) {
+function toSourceArtifact(context, sourceFile, uiFile) {
   return {
     path: sourceFile.path,
     language: sourceFile.path.endsWith(".js") || sourceFile.path.endsWith(".jsx") ? JAVASCRIPT : TYPESCRIPT,
     extractorId: DESCRIPTOR2.id,
-    roleHints: roleHintsFor2(sourceFile, uiFile)
+    roleHints: roleHintsFor(context, sourceFile, uiFile)
   };
 }
-function roleHintsFor2(sourceFile, uiFile) {
+function roleHintsFor(context, sourceFile, uiFile) {
   if (sourceFile.discoveredFrom === "sharedSourceDir") {
     return [{ role: "shared", reason: "shared source directory" }];
   }
   if (sourceFile.discoveredFrom === "localSourceDir" || uiFile?.kind === "page") {
     return [{ role: "local", reason: "local source directory" }];
   }
-  return [];
+  return roleHintsForPath(context, sourceFile.path);
 }
 
 // src/analysis/repositoryStructureAnalyzer.ts
 import { basename as basename2, dirname as dirname3, join as join6, relative as relative4 } from "path";
-var IGNORED_DIRECTORIES3 = /* @__PURE__ */ new Set([
+var IGNORED_DIRECTORIES4 = /* @__PURE__ */ new Set([
   ".agents",
   ".codex",
   ".git",
@@ -2399,11 +2505,11 @@ function walk(rootPath) {
   const directories = [];
   function visit3(directory) {
     for (const entry of readDirSafe(directory)) {
-      if (entry.isDirectory() && IGNORED_DIRECTORIES3.has(entry.name)) {
+      if (entry.isDirectory() && IGNORED_DIRECTORIES4.has(entry.name)) {
         continue;
       }
       const absolutePath = join6(directory, entry.name);
-      const repositoryPath = normalizePath3(relative4(rootPath, absolutePath));
+      const repositoryPath = normalizePath4(relative4(rootPath, absolutePath));
       if (entry.isDirectory()) {
         directories.push(repositoryPath);
         visit3(absolutePath);
@@ -2421,7 +2527,7 @@ function walk(rootPath) {
 function topLevelDirectories(directories) {
   return [
     ...new Set(
-      directories.filter((path) => !path.includes("/")).filter((path) => !IGNORED_DIRECTORIES3.has(path))
+      directories.filter((path) => !path.includes("/")).filter((path) => !IGNORED_DIRECTORIES4.has(path))
     )
   ].sort();
 }
@@ -2474,7 +2580,7 @@ function isManifestPath(path) {
 function add(map, key, path) {
   map.set(key, [...map.get(key) ?? [], path]);
 }
-function normalizePath3(path) {
+function normalizePath4(path) {
   return path.replaceAll("\\", "/");
 }
 
@@ -2526,7 +2632,7 @@ import * as fs from "fs";
 import { dirname as dirname4, join as join8, resolve } from "path";
 
 // src/config/loadConfig.ts
-import { existsSync as existsSync2, readFileSync as readFileSync3 } from "fs";
+import { existsSync, readFileSync as readFileSync3 } from "fs";
 import { join as join7 } from "path";
 
 // src/config/defaults.ts
@@ -2539,6 +2645,35 @@ var defaultConfig = {
     "src/common"
   ],
   localSourceDirs: ["src/screens", "src/pages", "src/routes", "src/views"],
+  sharedDirNames: [
+    "components",
+    "component",
+    "ui",
+    "design-system",
+    "designsystem",
+    "design_system",
+    "shared",
+    "common",
+    "widgets",
+    "controls",
+    "atoms",
+    "molecules",
+    "organisms",
+    "theme",
+    "tokens"
+  ],
+  localDirNames: [
+    "screens",
+    "screen",
+    "pages",
+    "page",
+    "routes",
+    "views",
+    "features",
+    "scenes",
+    "activities",
+    "fragments"
+  ],
   ignore: [
     "**/*.test.tsx",
     "**/*.test.jsx",
@@ -2560,6 +2695,8 @@ var CONFIG_FILENAME = "component-intent.json";
 var CONFIG_KEYS = [
   "sharedSourceDirs",
   "localSourceDirs",
+  "sharedDirNames",
+  "localDirNames",
   "sharedComponentDirs",
   "screenDirs",
   "ignore",
@@ -2569,7 +2706,7 @@ var CONFIG_KEYS = [
 ];
 function loadConfig(directory) {
   const configPath = join7(directory, CONFIG_FILENAME);
-  if (!existsSync2(configPath)) {
+  if (!existsSync(configPath)) {
     return { ...defaultConfig };
   }
   let parsed;
@@ -2602,6 +2739,8 @@ function validateUserConfig(value) {
   const config = value;
   assertOptionalStringArray(config.sharedSourceDirs, "sharedSourceDirs");
   assertOptionalStringArray(config.localSourceDirs, "localSourceDirs");
+  assertOptionalStringArray(config.sharedDirNames, "sharedDirNames");
+  assertOptionalStringArray(config.localDirNames, "localDirNames");
   assertOptionalStringArray(config.sharedComponentDirs, "sharedComponentDirs");
   assertOptionalStringArray(config.screenDirs, "screenDirs");
   assertOptionalStringArray(config.ignore, "ignore");
@@ -2950,25 +3089,68 @@ var RepositoryPatternDetector = class {
     if (localFacts.length < 2) {
       return [];
     }
+    return groupByFeatureSignature(localFacts);
+  }
+};
+function groupByFeatureSignature(localFacts) {
+  const groups = /* @__PURE__ */ new Map();
+  for (const facts of localFacts) {
+    const signature = structureSignature(facts);
+    if (signature === "") {
+      continue;
+    }
+    groups.set(signature, [...groups.get(signature) ?? [], facts]);
+  }
+  const patterns = [];
+  for (const [signature, members] of [...groups.entries()].sort()) {
+    if (members.length < 2) {
+      continue;
+    }
     const repeatedFeatures = repeatedByName2(
-      localFacts.flatMap(
+      members.flatMap(
         (facts) => facts.features.filter((feature) => isPatternFeature2(feature))
       ),
       featureIdentity2
     );
     if (repeatedFeatures.length === 0) {
-      return [];
+      continue;
     }
-    return [
-      {
-        id: "repository-pattern-1",
-        sourcePaths: localFacts.map((facts) => facts.path).sort(),
-        features: repeatedFeatures,
-        names: []
-      }
-    ];
+    patterns.push({
+      id: `repository-pattern-${patterns.length + 1}`,
+      sourcePaths: members.map((facts) => facts.path).sort(),
+      features: repeatedFeatures,
+      // Declaration names of the files taking part in the pattern. This was
+      // hardcoded to an empty array, which silently zeroed the name-overlap
+      // term in every similarity score computed in health mode.
+      names: declarationNames(members, signature)
+    });
   }
-};
+  return patterns;
+}
+function structureSignature(facts) {
+  return [
+    ...new Set(
+      facts.features.filter((feature) => feature.category === "structure").map((feature) => `${feature.key}:${feature.value}`)
+    )
+  ].sort().join("|");
+}
+function declarationNames(members, signature) {
+  const names = /* @__PURE__ */ new Set();
+  for (const facts of members) {
+    for (const declaration of facts.declarations) {
+      if (declaration.name !== void 0) {
+        names.add(declaration.name);
+      }
+    }
+  }
+  for (const entry of signature.split("|")) {
+    const value = entry.split(":")[1];
+    if (value !== void 0 && value !== "") {
+      names.add(value);
+    }
+  }
+  return [...names].sort();
+}
 function isPatternFeature2(feature) {
   return feature.category === "structure" || feature.category === "style";
 }
