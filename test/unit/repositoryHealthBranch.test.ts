@@ -141,17 +141,31 @@ describe("repository health branch", () => {
       evidence: ["shared role"]
     };
 
+    const sharedRole: RoleFact[] = [
+      {
+        scope: "file",
+        path: "src/components/Button.tsx",
+        role: "shared",
+        reasons: []
+      }
+    ];
+    // One resolved import elsewhere in the repository, so a zero-reference
+    // component is genuinely unreferenced rather than merely unresolvable.
+    const resolved: RelationshipFact[] = [
+      {
+        importerPath: "src/pages/A.tsx",
+        sourceModule: "./helpers",
+        importKind: "named",
+        localName: "helper",
+        resolution: "resolved",
+        targetPath: "src/pages/helpers.ts"
+      }
+    ];
+
     expect(
       new UnusedAbstractionDetector().detect(
-        knowledge([facts("src/components/Button.tsx")]),
-        [
-          {
-            scope: "file",
-            path: "src/components/Button.tsx",
-            role: "shared",
-            reasons: []
-          }
-        ],
+        knowledge([facts("src/components/Button.tsx")], [], resolved),
+        sharedRole,
         [candidate]
       )
     ).toEqual([
@@ -162,6 +176,48 @@ describe("repository health branch", () => {
         evidence: ["shared candidate has zero references"]
       }
     ]);
+  });
+
+  it("does not call abstractions unused when the import graph is unreliable", () => {
+    const candidate: AbstractionCandidate = {
+      path: "src/components/Button.tsx",
+      name: "Button",
+      evidence: ["shared role"]
+    };
+    const sharedRole: RoleFact[] = [
+      {
+        scope: "file",
+        path: "src/components/Button.tsx",
+        role: "shared",
+        reasons: []
+      }
+    ];
+    // Path aliases the analyzer cannot follow. Every file looks unreferenced,
+    // which is an artefact of resolution, not evidence of dead code.
+    const unresolved: RelationshipFact[] = [
+      {
+        importerPath: "src/pages/A.tsx",
+        sourceModule: "@/components/Button",
+        importKind: "named",
+        localName: "Button",
+        resolution: "unresolved"
+      },
+      {
+        importerPath: "src/pages/B.tsx",
+        sourceModule: "@/components/Button",
+        importKind: "named",
+        localName: "Button",
+        resolution: "unresolved"
+      }
+    ];
+
+    expect(
+      new UnusedAbstractionDetector().detect(
+        knowledge([facts("src/components/Button.tsx")], [], unresolved),
+        sharedRole,
+        [candidate]
+      )
+    ).toEqual([]);
   });
 
   it("creates competing implementation findings above threshold", () => {

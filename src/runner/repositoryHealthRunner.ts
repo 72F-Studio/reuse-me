@@ -7,7 +7,10 @@ import { RepositoryHealthResultAssembler } from "../analysis/repositoryHealthRes
 import { RepositoryPatternDetector } from "../analysis/repositoryPatternDetector";
 import { RoleAnalyzer } from "../analysis/roleAnalyzer";
 import { SimilarityScorer } from "../analysis/similarityScorer";
-import { UnusedAbstractionDetector } from "../analysis/unusedAbstractionDetector";
+import {
+  UnusedAbstractionDetector,
+  hasReliableGraph
+} from "../analysis/unusedAbstractionDetector";
 import type { CapabilityReport } from "../model/capability";
 import type { RepositoryKnowledge } from "../model/repositoryKnowledge";
 import type {
@@ -252,6 +255,21 @@ function repositoryIntelligence(
       hasUiProvider
         ? "framework-specific UI provider contributed facts"
         : "no framework knowledge provider installed"
+    ),
+    // Reported as its own area because suppressing the analysis silently is
+    // the same false-negative the tool exists to avoid: "no unused
+    // abstractions" and "cannot tell whether abstractions are unused" are very
+    // different statements to hand an agent.
+    area(
+      "unused-abstraction-analysis",
+      "Unused Abstraction Analysis",
+      hasReliableGraph(knowledge) ? "partial" : "unavailable",
+      hasReliableGraph(knowledge) ? "medium" : "not-available",
+      hasReliableGraph(knowledge)
+        ? "import graph resolves enough references to judge usage"
+        : relationships.length === 0
+          ? "no resolvable imports, so zero references is not evidence of disuse"
+          : `only ${resolvedRelationships}/${relationships.length} imports resolved, so zero references is not evidence of disuse`
     )
   ];
 

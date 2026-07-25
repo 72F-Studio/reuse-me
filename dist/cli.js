@@ -3181,8 +3181,12 @@ function repeatedByName2(values, nameFor) {
 }
 
 // src/analysis/unusedAbstractionDetector.ts
+var MINIMUM_RESOLUTION_RATE = 0.5;
 var UnusedAbstractionDetector = class {
   detect(knowledge, roles, candidates) {
+    if (!hasReliableGraph(knowledge)) {
+      return [];
+    }
     return candidates.filter((candidate) => isShared(candidate, roles)).filter(
       (candidate) => (knowledge.usageForPath(candidate.path)?.fileReferenceCount ?? 0) === 0
     ).map((candidate) => ({
@@ -3193,6 +3197,16 @@ var UnusedAbstractionDetector = class {
     }));
   }
 };
+function hasReliableGraph(knowledge) {
+  const relationships = knowledge.relationships();
+  if (relationships.length === 0) {
+    return false;
+  }
+  const resolved = relationships.filter(
+    (relationship) => relationship.resolution === "resolved"
+  ).length;
+  return resolved / relationships.length >= MINIMUM_RESOLUTION_RATE;
+}
 function isShared(candidate, roles) {
   return roles.some(
     (role) => role.path === candidate.path && role.role === "shared" && (role.name === void 0 || role.name === candidate.name)
@@ -3383,6 +3397,17 @@ function repositoryIntelligence(knowledge, capabilities) {
       hasUiProvider ? "partial" : "unavailable",
       hasUiProvider ? "medium" : "not-available",
       hasUiProvider ? "framework-specific UI provider contributed facts" : "no framework knowledge provider installed"
+    ),
+    // Reported as its own area because suppressing the analysis silently is
+    // the same false-negative the tool exists to avoid: "no unused
+    // abstractions" and "cannot tell whether abstractions are unused" are very
+    // different statements to hand an agent.
+    area2(
+      "unused-abstraction-analysis",
+      "Unused Abstraction Analysis",
+      hasReliableGraph(knowledge) ? "partial" : "unavailable",
+      hasReliableGraph(knowledge) ? "medium" : "not-available",
+      hasReliableGraph(knowledge) ? "import graph resolves enough references to judge usage" : relationships.length === 0 ? "no resolvable imports, so zero references is not evidence of disuse" : `only ${resolvedRelationships}/${relationships.length} imports resolved, so zero references is not evidence of disuse`
     )
   ];
   return {
