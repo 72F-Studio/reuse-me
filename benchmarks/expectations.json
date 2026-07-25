@@ -1,0 +1,35 @@
+{
+  "note": "Each example is one story told in a different ecosystem: a shared component exists, and local screens re-implement it inline. 'expectDrift' is whether the analyzer should report a competing implementation or a missing abstraction. The clean example is the control and must stay silent.",
+  "cases": [
+    {
+      "example": "kotlin-compose",
+      "language": "Kotlin / Jetpack Compose",
+      "expectDrift": true,
+      "duplicatedFiles": 3
+    },
+    {
+      "example": "swiftui",
+      "language": "Swift / SwiftUI",
+      "expectDrift": true,
+      "duplicatedFiles": 3
+    },
+    {
+      "example": "flutter",
+      "language": "Dart / Flutter",
+      "expectDrift": true,
+      "duplicatedFiles": 3
+    },
+    {
+      "example": "react-tailwind",
+      "language": "TypeScript / React",
+      "expectDrift": true,
+      "duplicatedFiles": 3
+    },
+    {
+      "example": "clean-kotlin",
+      "language": "Kotlin / Jetpack Compose",
+      "expectDrift": false,
+      "duplicatedFiles": 0
+    }
+  ]
+}
