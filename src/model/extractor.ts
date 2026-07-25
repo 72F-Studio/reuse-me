@@ -8,6 +8,9 @@ export interface ExtractorDescriptor {
   id: string;
   name: string;
   languages: Language[];
+  // Intelligence areas this provider contributes when it runs. Declared by the
+  // provider so the pipeline never has to special-case a provider by id.
+  contributes: string[];
 }
 
 export interface ExtractorSupport {

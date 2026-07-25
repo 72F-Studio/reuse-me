@@ -333,7 +333,11 @@ function knowledgeProviders(
       continue;
     }
 
-    providers.set(providerId(capability.reason), capability.reason);
+    // An area can be contributed by several providers at once, so the reason
+    // carries a comma-separated list rather than a single provider name.
+    for (const name of capability.reason.split(", ")) {
+      providers.set(providerId(name), name);
+    }
   }
 
   return [...providers.entries()].map(([id, name]) => ({ id, name }));

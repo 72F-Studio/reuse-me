@@ -25,7 +25,8 @@ const JAVASCRIPT = { id: "javascript", name: "JavaScript" };
 const DESCRIPTOR: ExtractorDescriptor = {
   id: "typescript-react",
   name: "TypeScript React Provider",
-  languages: [TYPESCRIPT, JAVASCRIPT]
+  languages: [TYPESCRIPT, JAVASCRIPT],
+  contributes: ["declaration-extraction", "ui-extraction"]
 };
 
 // Current React/TypeScript extraction backend.

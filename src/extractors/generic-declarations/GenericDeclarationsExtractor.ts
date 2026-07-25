@@ -43,7 +43,8 @@ const LANGUAGES: Language[] = [
 const DESCRIPTOR: ExtractorDescriptor = {
   id: "generic-declarations",
   name: "Generic Declaration Provider",
-  languages: LANGUAGES
+  languages: LANGUAGES,
+  contributes: ["declaration-extraction"]
 };
 
 const IGNORED_DIRECTORIES = new Set([

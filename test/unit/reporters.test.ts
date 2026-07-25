@@ -128,6 +128,7 @@ const limitedHealthResult: RepositoryHealthResult = {
     {
       id: "typescript-react",
       name: "TypeScript React Provider",
+      contributes: ["declaration-extraction", "ui-extraction"],
       languages: [
         { id: "typescript", name: "TypeScript" },
         { id: "javascript", name: "JavaScript" }

@@ -96,6 +96,70 @@ describe("mode runners", () => {
     expect(result.missingAbstractions).toEqual([]);
   });
 
+  it("composes every supporting provider instead of letting one win", () => {
+    const root = mkdtempSync(join(tmpdir(), "component-intent-audit-"));
+    tempDirs.push(root);
+    mkdirSync(join(root, ".git"));
+    writeFixture(
+      root,
+      "src/components/Button.tsx",
+      `export function Button() { return <button className="primary" />; }`
+    );
+    writeFixture(
+      root,
+      "server/handler.py",
+      "import os\n\ndef handle_request():\n    return os.getcwd()\n"
+    );
+    writeFixture(
+      root,
+      "app/src/main/kotlin/Screen.kt",
+      "package app\n\nfun renderScreen(): String = \"screen\"\n"
+    );
+
+    const construction = new KnowledgePipelineRunner().construct(root);
+
+    if (construction.status !== "ready") {
+      throw new Error("Expected ready repository knowledge");
+    }
+
+    const analysedPaths = construction.knowledge
+      .allFacts()
+      .map((facts) => facts.path)
+      .sort();
+
+    // The React provider owns the .tsx file and the generic provider still
+    // contributes the Python and Kotlin sources. Before providers composed,
+    // the React provider matched first and these two files did not exist.
+    expect(analysedPaths).toEqual([
+      "app/src/main/kotlin/Screen.kt",
+      "server/handler.py",
+      "src/components/Button.tsx"
+    ]);
+
+    expect(
+      construction.knowledge.artifactForPath("src/components/Button.tsx")
+        ?.extractorId
+    ).toBe("typescript-react");
+    expect(
+      construction.knowledge.artifactForPath("server/handler.py")?.extractorId
+    ).toBe("generic-declarations");
+
+    expect(construction.capabilities).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "ui-extraction",
+          status: "available",
+          reason: "TypeScript React Provider"
+        }),
+        expect.objectContaining({
+          id: "declaration-extraction",
+          status: "available",
+          reason: "TypeScript React Provider, Generic Declaration Provider"
+        })
+      ])
+    );
+  });
+
   it("reports limited repositories when no source extractor can produce facts", () => {
     const root = mkdtempSync(join(tmpdir(), "component-intent-audit-"));
     tempDirs.push(root);

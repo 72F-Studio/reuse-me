@@ -190,7 +190,7 @@ function formatRepositoryHeuristics(findings) {
   );
 }
 function formatRepository(repository) {
-  return `${repository.fileCount} files, ${repository.sourceFileCount} source files, ${repository.directoryCount} directories`;
+  return `${repository.rootPath}: ${repository.fileCount} files, ${repository.sourceFileCount} source files, ${repository.directoryCount} directories`;
 }
 function formatLanguages(languages) {
   if (languages.length === 0) {
@@ -280,7 +280,7 @@ function formatRepositoryHeuristics2(findings) {
   );
 }
 function formatRepository2(repository) {
-  return `${repository.fileCount} files, ${repository.sourceFileCount} source files, ${repository.directoryCount} directories`;
+  return `${repository.rootPath}: ${repository.fileCount} files, ${repository.sourceFileCount} source files, ${repository.directoryCount} directories`;
 }
 function formatIntelligence2(intelligence) {
   return [
@@ -917,7 +917,8 @@ var LANGUAGES = [
 var DESCRIPTOR = {
   id: "generic-declarations",
   name: "Generic Declaration Provider",
-  languages: LANGUAGES
+  languages: LANGUAGES,
+  contributes: ["declaration-extraction"]
 };
 var IGNORED_DIRECTORIES2 = /* @__PURE__ */ new Set([
   ".agents",
@@ -2237,7 +2238,8 @@ var JAVASCRIPT = { id: "javascript", name: "JavaScript" };
 var DESCRIPTOR2 = {
   id: "typescript-react",
   name: "TypeScript React Provider",
-  languages: [TYPESCRIPT, JAVASCRIPT]
+  languages: [TYPESCRIPT, JAVASCRIPT],
+  contributes: ["declaration-extraction", "ui-extraction"]
 };
 var TypeScriptReactExtractor = class {
   constructor(sourceDiscovery = new SourceFileDiscovery(), uiClassifier = new UiFileClassifier(), parser = new SourceFileParser(), factsBuilder = new RepositoryFactsBuilder(), jsxExtractor = new JsxStructureExtractor(), styleExtractor = new StyleTokenExtractor(), indexBuilder = new RepositoryFactsIndexBuilder(), relationshipAnalyzer = new RelationshipAnalyzer()) {
@@ -2378,6 +2380,7 @@ var RepositoryStructureAnalyzer = class {
     );
     return {
       summary: {
+        rootPath: context.rootPath,
         fileCount: tree.files.length,
         directoryCount: tree.directories.length,
         sourceFileCount: sourceFiles.length,
@@ -2767,10 +2770,10 @@ var KnowledgePipelineRunner = class {
     const context = discoverRepositoryContext(startPath);
     const repositoryStructure = this.structureAnalyzer.analyze(context);
     const detectedLanguages = this.languageDetector.detect(context);
-    const extractor = this.extractors.find(
+    const supportedExtractors = this.extractors.filter(
       (candidate) => candidate.detect(context).supported
     );
-    if (extractor === void 0) {
+    if (supportedExtractors.length === 0) {
       return {
         status: "limited",
         context,
@@ -2782,12 +2785,16 @@ var KnowledgePipelineRunner = class {
         repositoryStructure
       };
     }
-    const extraction = extractor.extract(context);
+    const extraction = mergeExtractions(
+      supportedExtractors.map((candidate) => candidate.extract(context))
+    );
     const factsIndex = this.indexBuilder.build(extraction.facts);
     const usage = this.usageAnalyzer.analyze(factsIndex, extraction.relationships);
     return {
       status: "ready",
-      capabilities: readyCapabilities(extractor.descriptor()),
+      capabilities: readyCapabilities(
+        supportedExtractors.map((candidate) => candidate.descriptor())
+      ),
       repositoryStructure,
       knowledge: this.assembler.assemble({
         context,
@@ -2806,14 +2813,72 @@ var KnowledgePipelineRunner = class {
     return result.knowledge;
   }
 };
-function readyCapabilities(extractor) {
+function mergeExtractions(extractions) {
+  const artifactsByPath = /* @__PURE__ */ new Map();
+  const factsByPath = /* @__PURE__ */ new Map();
+  const relationshipsByKey = /* @__PURE__ */ new Map();
+  for (const extraction of extractions) {
+    for (const artifact of extraction.artifacts) {
+      if (!artifactsByPath.has(artifact.path)) {
+        artifactsByPath.set(artifact.path, artifact);
+      }
+    }
+    for (const facts of extraction.facts) {
+      if (!factsByPath.has(facts.path)) {
+        factsByPath.set(facts.path, facts);
+      }
+    }
+    for (const relationship of extraction.relationships) {
+      const key = relationshipKey(relationship);
+      const existing = relationshipsByKey.get(key);
+      if (existing === void 0 || prefersReplacement(existing, relationship)) {
+        relationshipsByKey.set(key, relationship);
+      }
+    }
+  }
+  return {
+    artifacts: [...artifactsByPath.values()].sort(
+      (a, b) => a.path.localeCompare(b.path)
+    ),
+    facts: [...factsByPath.values()].sort((a, b) => a.path.localeCompare(b.path)),
+    relationships: [...relationshipsByKey.values()]
+  };
+}
+function relationshipKey(relationship) {
+  return [
+    relationship.importerPath,
+    relationship.sourceModule,
+    relationship.importKind,
+    relationship.localName,
+    relationship.importedName ?? ""
+  ].join("\0");
+}
+function prefersReplacement(existing, candidate) {
+  return existing.resolution !== "resolved" && candidate.resolution === "resolved";
+}
+function readyCapabilities(extractors) {
+  const contributorsByArea = /* @__PURE__ */ new Map();
+  for (const extractor of extractors) {
+    for (const area3 of extractor.contributes) {
+      contributorsByArea.set(area3, [
+        ...contributorsByArea.get(area3) ?? [],
+        extractor.name
+      ]);
+    }
+  }
   return [
     available("repository-structure", "Repository structure", "built-in"),
     available("repository-heuristics", "Repository heuristics", "built-in"),
-    available("declaration-extraction", "Declaration extraction", extractor.name),
-    extractor.id === "typescript-react" ? available("ui-extraction", "UI extraction", extractor.name) : missing("ui-extraction", "UI extraction")
+    ...KNOWN_AREAS.map(([id, name]) => {
+      const contributors = contributorsByArea.get(id);
+      return contributors === void 0 ? missing(id, name) : available(id, name, contributors.join(", "));
+    })
   ];
 }
+var KNOWN_AREAS = [
+  ["declaration-extraction", "Declaration extraction"],
+  ["ui-extraction", "UI extraction"]
+];
 function limitedCapabilities() {
   return [
     available("repository-structure", "Repository structure", "built-in"),
@@ -3180,7 +3245,9 @@ function knowledgeProviders(capabilities) {
     if (capability.status !== "available" || capability.reason === "built-in") {
       continue;
     }
-    providers.set(providerId(capability.reason), capability.reason);
+    for (const name of capability.reason.split(", ")) {
+      providers.set(providerId(name), name);
+    }
   }
   return [...providers.entries()].map(([id, name]) => ({ id, name }));
 }
