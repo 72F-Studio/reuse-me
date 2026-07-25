@@ -1,4 +1,5 @@
 import type { ChangeAnalysisResult } from "../model/changeAnalysisResult";
+import type { InventoryResult } from "../model/inventoryResult";
 import type { ExtractorDescriptor } from "../model/extractor";
 import type { Language } from "../model/language";
 import type {
@@ -14,11 +15,50 @@ import type {
 // Renders analysis results for terminal output.
 // Presentation only: no filtering or analysis.
 export class TextReporter {
-  render(result: ChangeAnalysisResult | RepositoryHealthResult): string {
-    return result.mode === "change"
-      ? renderChange(result)
+  render(
+    result: ChangeAnalysisResult | RepositoryHealthResult | InventoryResult
+  ): string {
+    if (result.mode === "change") {
+      return renderChange(result);
+    }
+
+    return result.mode === "inventory"
+      ? renderInventory(result)
       : renderHealth(result);
   }
+}
+
+// Written as instructions rather than data because the reader is usually a
+// coding agent about to build UI, not a person browsing a report.
+function renderInventory(result: InventoryResult): string {
+  const lines: string[] = [];
+
+  if (result.components.length === 0) {
+    lines.push("No shared components found.");
+  } else {
+    lines.push("Shared components — reuse these instead of re-implementing:");
+    lines.push(
+      ...result.components.map(
+        (component) =>
+          `  ${component.name} — ${component.path} (${component.referenceCount} references)`
+      )
+    );
+  }
+
+  if (result.tokens.length === 0) {
+    lines.push("");
+    lines.push("No design tokens found.");
+  } else {
+    lines.push("");
+    lines.push("Design tokens — reference these instead of hardcoding values:");
+    lines.push(
+      ...result.tokens.map(
+        (token) => `  ${token.name} = ${token.value} — ${token.sourcePath}`
+      )
+    );
+  }
+
+  return lines.join("\n");
 }
 
 function renderChange(result: ChangeAnalysisResult): string {

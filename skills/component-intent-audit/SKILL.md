@@ -22,10 +22,27 @@ Swift, Dart, Vue and TypeScript all go through the same backend.
 
 - Whole repo: `component-intent-audit --health --json`
 - Current diff: `component-intent-audit --diff --json`
+- What exists to reuse: `component-intent-audit --inventory`
+- Does this file duplicate something: `component-intent-audit --check <paths...>`
 - Human output: drop `--json`
 
 Use whole-repo health mode by default. Use diff mode only when the user asks
 about current changes or a patch.
+
+## Before writing UI
+
+Run `component-intent-audit --inventory` before creating or editing a
+component, screen, page or view. Reuse a listed component instead of writing a
+new inline implementation, and reference a listed token instead of hardcoding
+a colour or dimension.
+
+If what you need is genuinely missing, add it to the shared location the
+inventory reports and import it from there. Do not inline it in a screen.
+
+After writing, `component-intent-audit --check <path>` reports whether the new
+file re-implements something that already exists. Exit code 2 means it found
+something; exit code 1 means the analyzer could not run, which is not a code
+problem.
 
 ## Command Lookup
 

@@ -27,6 +27,12 @@ fixes. Prefer the tool's repository structure, declaration, relationship, and
 usage data before opening files. Treat results as review prompts, not proof:
 static heuristics, no model calls, no autofix.
 
+Before writing or editing UI, run `component-intent-audit --inventory` and
+reuse what it lists rather than writing a new inline implementation. After
+writing, `component-intent-audit --check <path>` reports whether the file
+duplicates an existing component. Exit code 2 means findings; exit code 1
+means the analyzer could not run, which is not a code problem.
+
 Finding kinds: `competing-implementation`, `missing-abstraction`,
 `unused-abstraction`, `untokenized-value` (`bypassed` when a token with that
 value already exists, `candidate` when the value repeats untokenized).

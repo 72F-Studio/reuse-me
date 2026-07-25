@@ -7,8 +7,9 @@ checkout screen and it writes that button again, slightly different. Nothing
 is broken, no test fails, and six months later a brand colour change is a
 forty-file archaeology exercise instead of one token edit.
 
-This is a local, deterministic CLI that finds those re-implementations — in
-any language, with no model calls.
+This is a local, deterministic CLI that **stops** those re-implementations
+before they are written, and finds the ones already there — in any language,
+with no model calls.
 
 ## Before / after
 
@@ -37,6 +38,40 @@ Competing implementation: ui/screens/LoginScreen.kt, ui/screens/ProfileScreen.kt
 
 There is no Kotlin plugin. There is no Compose plugin. The same run finds the
 same story in SwiftUI, Flutter and React.
+
+## Prevention, not just diagnosis
+
+Finding the third copy of a button is losing more slowly. The point is that
+the third copy never gets written.
+
+**Before the agent writes**, a `PreToolUse` hook tells it what already exists:
+
+```
+$ component-intent-audit --inventory
+Shared components — reuse these instead of re-implementing:
+  Button — src/components/Button.tsx (3 references)
+
+Design tokens — reference these instead of hardcoding values:
+  brand-primary = #3b82f6 — src/styles/variables.css
+```
+
+**After it writes**, a `PostToolUse` hook checks the file and blocks on drift:
+
+```
+$ component-intent-audit --check src/screens/Login.tsx
+Source-of-truth warning: src/screens/Login.tsx ->
+  src/components/Button.tsx (Button), confidence 1
+$ echo $?
+2
+```
+
+`--check` works on a *single* file, unlike `--diff`, which needs two files
+repeating each other before it says anything. Agents write one file at a time,
+so a check that waits for the second copy arrives one duplication too late.
+
+Both hooks are in [`hooks/`](hooks). Start in advisory mode
+(`COMPONENT_INTENT_AUDIT_ADVISORY=1`) before letting them block. Full setup and
+limits: [docs/prevention.md](docs/prevention.md).
 
 ## The numbers
 
@@ -131,6 +166,8 @@ npm install
 npm run build
 npm run dev -- --health          # whole repository
 npm run dev -- --diff            # current working-tree changes
+npm run dev -- --inventory       # what exists, for reuse
+npm run dev -- --check src/screens/Login.tsx   # does this duplicate something?
 npm run dev -- --health --json   # for agents
 npm run dev -- --health --markdown
 ```

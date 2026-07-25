@@ -1,0 +1,27 @@
+{
+  "_comment": "Copy these entries into .claude/settings.json and replace the absolute paths. Set COMPONENT_INTENT_AUDIT_BIN if the CLI is not in dist/ beside the hooks. Start with COMPONENT_INTENT_AUDIT_ADVISORY=1 on check-write.mjs until you trust it on your repository.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /absolute/path/to/component-intent-audit/hooks/inject-inventory.mjs"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /absolute/path/to/component-intent-audit/hooks/check-write.mjs"
+          }
+        ]
+      }
+    ]
+  }
+}
