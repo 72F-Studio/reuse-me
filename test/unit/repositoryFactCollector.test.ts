@@ -13,7 +13,7 @@ const tempDirs: string[] = [];
 const collector = new RepositoryFactCollector();
 
 function createTempDir(): string {
-  const directory = mkdtempSync(join(tmpdir(), "component-intent-audit-"));
+  const directory = mkdtempSync(join(tmpdir(), "reuse-me-"));
   tempDirs.push(directory);
   return directory;
 }

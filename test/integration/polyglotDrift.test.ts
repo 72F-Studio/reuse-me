@@ -32,7 +32,7 @@ function writeFixture(root: string, path: string, source: string): void {
 }
 
 function createRepo(files: Record<string, string>): string {
-  const root = mkdtempSync(join(tmpdir(), "component-intent-audit-polyglot-"));
+  const root = mkdtempSync(join(tmpdir(), "reuse-me-polyglot-"));
   tempDirs.push(root);
   mkdirSync(join(root, ".git"));
 

@@ -1,5 +1,5 @@
 {
-  "_comment": "Copy these entries into .claude/settings.json and replace the absolute paths. Set COMPONENT_INTENT_AUDIT_BIN if the CLI is not in dist/ beside the hooks. Start with COMPONENT_INTENT_AUDIT_ADVISORY=1 on check-write.mjs until you trust it on your repository.",
+  "_comment": "Copy these entries into .claude/settings.json and replace the absolute paths. Set REUSE_ME_BIN if the CLI is not in dist/ beside the hooks. Start with REUSE_ME_ADVISORY=1 on check-write.mjs until you trust it on your repository.",
   "hooks": {
     "PreToolUse": [
       {
@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node /absolute/path/to/component-intent-audit/hooks/inject-inventory.mjs"
+            "command": "node /absolute/path/to/reuse-me/hooks/inject-inventory.mjs"
           }
         ]
       }
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node /absolute/path/to/component-intent-audit/hooks/check-write.mjs"
+            "command": "node /absolute/path/to/reuse-me/hooks/check-write.mjs"
           }
         ]
       }

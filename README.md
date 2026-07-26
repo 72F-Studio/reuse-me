@@ -1,4 +1,4 @@
-# component-intent-audit
+# reuse-me
 
 **AI coding agents keep rebuilding the button you already have.**
 
@@ -28,7 +28,7 @@ fun ProfileScreen() {
 }
 ```
 
-`component-intent-audit --health` says:
+`reuse-me --health` says:
 
 ```
 Competing implementation: ui/screens/LoginScreen.kt, ui/screens/ProfileScreen.kt,
@@ -47,7 +47,7 @@ the third copy never gets written.
 **Before the agent writes**, a `PreToolUse` hook tells it what already exists:
 
 ```
-$ component-intent-audit --inventory
+$ reuse-me --inventory
 Shared components — reuse these instead of re-implementing:
   Button — src/components/Button.tsx (3 references)
 
@@ -58,7 +58,7 @@ Design tokens — reference these instead of hardcoding values:
 **After it writes**, a `PostToolUse` hook checks the file and blocks on drift:
 
 ```
-$ component-intent-audit --check src/screens/Login.tsx
+$ reuse-me --check src/screens/Login.tsx
 Source-of-truth warning: src/screens/Login.tsx ->
   src/components/Button.tsx (Button), confidence 1
 $ echo $?
@@ -70,7 +70,7 @@ repeating each other before it says anything. Agents write one file at a time,
 so a check that waits for the second copy arrives one duplication too late.
 
 Both hooks are in [`hooks/`](hooks). Start in advisory mode
-(`COMPONENT_INTENT_AUDIT_ADVISORY=1`) before letting them block. Full setup and
+(`REUSE_ME_ADVISORY=1`) before letting them block. Full setup and
 limits: [docs/prevention.md](docs/prevention.md).
 
 ## The numbers
@@ -193,14 +193,14 @@ OpenCode, pi, Hermes, Devin, Cursor, Windsurf, Cline, Kiro, Swival, OpenClaw,
 and anything reading `AGENTS.md`.
 
 ```bash
-export COMPONENT_INTENT_AUDIT_BIN=/absolute/path/to/dist/cli.js
+export REUSE_ME_BIN=/absolute/path/to/dist/cli.js
 ```
 
 See [docs/agent-portability.md](docs/agent-portability.md).
 
 ## Configuration
 
-Optional `component-intent.json`. Missing fields inherit defaults; unknown
+Optional `reuse-me.json`. Missing fields inherit defaults; unknown
 fields are rejected.
 
 ```json

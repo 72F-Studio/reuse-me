@@ -22,7 +22,7 @@ afterEach(() => {
 });
 
 function createRepo(files: Record<string, string>): string {
-  const root = mkdtempSync(join(tmpdir(), "component-intent-audit-prevent-"));
+  const root = mkdtempSync(join(tmpdir(), "reuse-me-prevent-"));
   tempDirs.push(root);
   mkdirSync(join(root, ".git"));
 

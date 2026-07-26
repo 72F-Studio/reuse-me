@@ -22,7 +22,7 @@ afterEach(() => {
 
 describe("GenericDeclarationsExtractor", () => {
   it("extracts declarations and resolves imports across common languages", () => {
-    const root = mkdtempSync(join(tmpdir(), "component-intent-audit-"));
+    const root = mkdtempSync(join(tmpdir(), "reuse-me-"));
     tempDirs.push(root);
     mkdirSync(join(root, ".git"));
     writeFixture(

@@ -22,7 +22,7 @@ const EXIT_ERROR = 1;
 const program = new Command();
 
 program
-  .name("component-intent-audit")
+  .name("reuse-me")
   .description(
     "Analyze repository knowledge and health using registered extractors."
   )

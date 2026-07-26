@@ -1,5 +1,5 @@
 {
-  "name": "component-intent-audit",
+  "name": "reuse-me",
   "version": "0.1.0",
   "description": "Audit React and TypeScript UI repositories for shared-component drift.",
   "author": {

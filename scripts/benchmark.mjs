@@ -26,7 +26,7 @@ const expectations = JSON.parse(
 // example is copied somewhere it owns rather than analysed in place inside
 // this repository's checkout.
 function stage(example) {
-  const staged = mkdtempSync(join(tmpdir(), "component-intent-audit-bench-"));
+  const staged = mkdtempSync(join(tmpdir(), "reuse-me-bench-"));
   cpSync(join(repoRoot, "examples", example), staged, { recursive: true });
   mkdirSync(join(staged, ".git"));
   return staged;

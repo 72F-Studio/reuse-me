@@ -1,12 +1,12 @@
 ---
-name: component-intent-audit
+name: reuse-me
 description: >
-  Runs the component-intent-audit CLI to find re-implemented components and
+  Runs the reuse-me CLI to find re-implemented components and
   design values hardcoded instead of tokenized, in any language. Use when the
   user asks for shared-component drift, component intent audit, repository
   health, current diff audit, source-of-truth checks, design token drift,
-  hardcoded colors or spacing, component-intent-audit, or
-  /component-intent-audit. Produces deterministic findings; does not apply
+  hardcoded colors or spacing, reuse-me, or
+  /reuse-me. Produces deterministic findings; does not apply
   fixes unless the user separately asks for implementation.
 ---
 
@@ -20,10 +20,10 @@ Swift, Dart, Vue and TypeScript all go through the same backend.
 
 ## Modes
 
-- Whole repo: `component-intent-audit --health --json`
-- Current diff: `component-intent-audit --diff --json`
-- What exists to reuse: `component-intent-audit --inventory`
-- Does this file duplicate something: `component-intent-audit --check <paths...>`
+- Whole repo: `reuse-me --health --json`
+- Current diff: `reuse-me --diff --json`
+- What exists to reuse: `reuse-me --inventory`
+- Does this file duplicate something: `reuse-me --check <paths...>`
 - Human output: drop `--json`
 
 Use whole-repo health mode by default. Use diff mode only when the user asks
@@ -31,7 +31,7 @@ about current changes or a patch.
 
 ## Before writing UI
 
-Run `component-intent-audit --inventory` before creating or editing a
+Run `reuse-me --inventory` before creating or editing a
 component, screen, page or view. Reuse a listed component instead of writing a
 new inline implementation, and reference a listed token instead of hardcoding
 a colour or dimension.
@@ -39,7 +39,7 @@ a colour or dimension.
 If what you need is genuinely missing, add it to the shared location the
 inventory reports and import it from there. Do not inline it in a screen.
 
-After writing, `component-intent-audit --check <path>` reports whether the new
+After writing, `reuse-me --check <path>` reports whether the new
 file re-implements something that already exists. Exit code 2 means it found
 something; exit code 1 means the analyzer could not run, which is not a code
 problem.
@@ -48,10 +48,10 @@ problem.
 
 Prefer this order:
 
-1. If `COMPONENT_INTENT_AUDIT_BIN` is set, run that executable.
-2. If `component-intent-audit` is on `PATH`, run it.
+1. If `REUSE_ME_BIN` is set, run that executable.
+2. If `reuse-me` is on `PATH`, run it.
 3. If this source checkout is available, run the built CLI directly:
-   `node /absolute/path/to/component-intent-audit/dist/cli.js --health --json`.
+   `node /absolute/path/to/reuse-me/dist/cli.js --health --json`.
 4. If only source is available, run `npm install` if needed, then `npm run build`,
    then the built CLI.
 

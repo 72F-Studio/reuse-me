@@ -20,7 +20,7 @@
 //     }
 //   }
 //
-// Set COMPONENT_INTENT_AUDIT_ADVISORY=1 to report without blocking.
+// Set REUSE_ME_ADVISORY=1 to report without blocking.
 
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
@@ -44,8 +44,8 @@ function readInput() {
 }
 
 function locateCli() {
-  if (process.env.COMPONENT_INTENT_AUDIT_BIN) {
-    return process.env.COMPONENT_INTENT_AUDIT_BIN;
+  if (process.env.REUSE_ME_BIN) {
+    return process.env.REUSE_ME_BIN;
   }
 
   const bundled = resolve(
@@ -103,11 +103,11 @@ const message = [
   "",
   "Import the existing component instead of keeping the inline copy, or, if",
   "it genuinely does not fit, extend the shared component so both callers use",
-  "one source of truth. Run `component-intent-audit --inventory` to see what",
+  "one source of truth. Run `reuse-me --inventory` to see what",
   "is available."
 ].join("\n");
 
-if (process.env.COMPONENT_INTENT_AUDIT_ADVISORY === "1") {
+if (process.env.REUSE_ME_ADVISORY === "1") {
   process.stdout.write(message);
   process.exit(0);
 }

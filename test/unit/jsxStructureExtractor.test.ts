@@ -31,7 +31,7 @@ function parsed(sourceText: string): ParsedSource {
 }
 
 function createVirtualFile(sourceText: string): string {
-  const directory = mkdtempSync(join(tmpdir(), "component-intent-audit-"));
+  const directory = mkdtempSync(join(tmpdir(), "reuse-me-"));
   const path = join(directory, "Component.tsx");
   tempDirs.push(directory);
   writeFileSync(path, sourceText);

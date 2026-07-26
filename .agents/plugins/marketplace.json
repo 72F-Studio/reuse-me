@@ -1,11 +1,11 @@
 {
-  "name": "component-intent-audit",
+  "name": "reuse-me",
   "interface": {
     "displayName": "Component Intent Audit"
   },
   "plugins": [
     {
-      "name": "component-intent-audit",
+      "name": "reuse-me",
       "source": {
         "source": "local",
         "path": "../.."

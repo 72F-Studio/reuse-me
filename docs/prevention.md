@@ -15,7 +15,7 @@ the tool produces, because it is meant to fit in a model's context at the
 moment it is about to build something.
 
 ```
-$ component-intent-audit --inventory
+$ reuse-me --inventory
 Shared components — reuse these instead of re-implementing:
   Button — src/components/Button.tsx (3 references)
   Card — src/components/Card.tsx (7 references)
@@ -33,7 +33,7 @@ read the whole component directory costs more context than it saves.
 Checks named files against the abstractions that already exist.
 
 ```
-$ component-intent-audit --check src/screens/Login.tsx
+$ reuse-me --check src/screens/Login.tsx
 Source-of-truth warning: src/screens/Login.tsx ->
   src/components/Button.tsx (Button), confidence 1
 $ echo $?
@@ -64,7 +64,7 @@ problem.
 ## The hooks
 
 Both live in [`hooks/`](../hooks) and read the standard hook JSON on stdin.
-Point them at an absolute path, and set `COMPONENT_INTENT_AUDIT_BIN` if the
+Point them at an absolute path, and set `REUSE_ME_BIN` if the
 CLI is not beside them in `dist/`.
 
 ### `inject-inventory.mjs` — PreToolUse
@@ -80,7 +80,7 @@ After a write, runs `--check` on the file. If the file re-implements something
 that already exists, it exits 2 and puts the finding on stderr, which the
 agent receives as a blocking error it has to answer for.
 
-Set `COMPONENT_INTENT_AUDIT_ADVISORY=1` to report without blocking.
+Set `REUSE_ME_ADVISORY=1` to report without blocking.
 
 ### Wiring
 
@@ -118,7 +118,7 @@ The same file is in [`hooks/settings.example.json`](../hooks/settings.example.js
 ## Limits worth knowing before you enable blocking
 
 - The check is a heuristic over static evidence, so it can be wrong. Start
-  with `COMPONENT_INTENT_AUDIT_ADVISORY=1` and see what it says about your
+  with `REUSE_ME_ADVISORY=1` and see what it says about your
   repository before letting it block writes.
 - It runs the full analysis per write, roughly 200ms on a small repository and
   proportional to repository size. There is no caching yet.

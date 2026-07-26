@@ -6,11 +6,11 @@ inclusion: manual
 # Component Intent Audit
 
 Use when asked for repository health, declarations/usages, component intent,
-shared-component drift, repeated local UI, or `component-intent-audit`.
+shared-component drift, repeated local UI, or `reuse-me`.
 
-Run `component-intent-audit --health --json` by default. Run
-`component-intent-audit --diff --json` for current changes. If the binary is
-not on `PATH`, use `COMPONENT_INTENT_AUDIT_BIN` or the built CLI from this
+Run `reuse-me --health --json` by default. Run
+`reuse-me --diff --json` for current changes. If the binary is
+not on `PATH`, use `REUSE_ME_BIN` or the built CLI from this
 checkout.
 
 Summarize repository intelligence coverage, findings, and intelligence signals

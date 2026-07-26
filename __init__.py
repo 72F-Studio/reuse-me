@@ -1,4 +1,4 @@
-"""Hermes plugin for component-intent-audit."""
+"""Hermes plugin for reuse-me."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from typing import Any, Callable
 
 ROOT = Path(__file__).resolve().parent
 SKILLS_DIR = ROOT / "skills"
-COMMAND = "component-intent-audit"
+COMMAND = "reuse-me"
 
 
 def _skill_prompt(args: str = "") -> str:
@@ -15,7 +15,7 @@ def _skill_prompt(args: str = "") -> str:
     suffix = f"\n\nUser arguments: {tail}" if tail else ""
     return (
         "Load and follow the Hermes plugin skill "
-        "`component-intent-audit:component-intent-audit`. "
+        "`reuse-me:reuse-me`. "
         "Audit React/TypeScript shared-component drift and report findings only."
         f"{suffix}"
     )
@@ -47,7 +47,7 @@ def _make_command_handler(ctx: Any) -> Callable[[str], str]:
         prompt = _skill_prompt(raw_args or "")
         try:
             if ctx.inject_message(prompt):
-                return "Queued `component-intent-audit` for the agent."
+                return "Queued `reuse-me` for the agent."
         except Exception:
             pass
         return prompt

@@ -42,8 +42,8 @@ function readInput() {
 }
 
 function locateCli() {
-  if (process.env.COMPONENT_INTENT_AUDIT_BIN) {
-    return process.env.COMPONENT_INTENT_AUDIT_BIN;
+  if (process.env.REUSE_ME_BIN) {
+    return process.env.REUSE_ME_BIN;
   }
 
   const bundled = resolve(

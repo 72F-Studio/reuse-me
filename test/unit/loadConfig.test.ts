@@ -10,7 +10,7 @@ import { CONFIG_FILENAME, loadConfig } from "../../src/config/loadConfig";
 const tempDirs: string[] = [];
 
 function createTempDir(): string {
-  const directory = mkdtempSync(join(tmpdir(), "component-intent-audit-"));
+  const directory = mkdtempSync(join(tmpdir(), "reuse-me-"));
   tempDirs.push(directory);
   return directory;
 }

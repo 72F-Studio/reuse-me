@@ -2,21 +2,21 @@
 
 When asked for repository health, source-of-truth misses, shared-component
 drift, component intent, declarations/usages, architecture drift, or
-`component-intent-audit`, run the local CLI and summarize deterministic data.
+`reuse-me`, run the local CLI and summarize deterministic data.
 
 Prefer:
 
 ```bash
-component-intent-audit --health --json
+reuse-me --health --json
 ```
 
 For a current diff:
 
 ```bash
-component-intent-audit --diff --json
+reuse-me --diff --json
 ```
 
-If `COMPONENT_INTENT_AUDIT_BIN` is set, run that executable. If only a source
+If `REUSE_ME_BIN` is set, run that executable. If only a source
 checkout is known, build it and run `node <checkout>/dist/cli.js`.
 
 Report repository intelligence coverage, `repositoryHeuristics`,

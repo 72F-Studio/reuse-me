@@ -1,10 +1,10 @@
-name: component-intent-audit
+name: reuse-me
 version: 0.1.0
-description: Repository health, declaration, usage, and component-intent audit for Hermes Agent, bundled skill, and slash command.
+description: Repository health, declaration, usage, and component reuse audit for Hermes Agent, bundled skill, and slash command.
 author: Component Intent Audit
 provides_hooks:
   - pre_gateway_dispatch
 provides_commands:
-  - component-intent-audit
+  - reuse-me
 provides_skills:
-  - component-intent-audit
+  - reuse-me

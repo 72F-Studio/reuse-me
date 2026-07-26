@@ -1,5 +1,5 @@
 {
-  "name": "component-intent-audit",
+  "name": "reuse-me",
   "version": "0.1.0",
   "description": "Audit repository health, declarations, usage, and component intent with deterministic static signals.",
   "author": {
@@ -11,14 +11,14 @@
   "interface": {
     "displayName": "Component Intent Audit",
     "shortDescription": "Map repo structure, declarations, usage, and drift.",
-    "longDescription": "Runs a local capability-driven static analyzer in whole-repository health mode or current-diff mode. Produces deterministic repository, declaration, relationship, usage, and component-intent signals before agents read source files.",
+    "longDescription": "Runs a local capability-driven static analyzer in whole-repository health mode or current-diff mode. Produces deterministic repository, declaration, relationship, usage, and component reuse signals before agents read source files.",
     "developerName": "Component Intent Audit",
     "category": "Productivity",
     "capabilities": ["Instructions"],
     "defaultPrompt": [
       "Audit this repo for health and usage signals.",
       "Map declarations and source-of-truth drift.",
-      "Run component-intent-audit health mode."
+      "Run reuse-me health mode."
     ],
     "brandColor": "#1F2937"
   }

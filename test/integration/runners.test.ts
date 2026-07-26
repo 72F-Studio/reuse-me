@@ -11,7 +11,7 @@ import { RepositoryHealthRunner } from "../../src/runner/repositoryHealthRunner"
 const tempDirs: string[] = [];
 
 function createRepo(): string {
-  const root = mkdtempSync(join(tmpdir(), "component-intent-audit-"));
+  const root = mkdtempSync(join(tmpdir(), "reuse-me-"));
   tempDirs.push(root);
   mkdirSync(join(root, ".git"));
   writeFixture(
@@ -99,7 +99,7 @@ describe("mode runners", () => {
   });
 
   it("composes every supporting provider instead of letting one win", () => {
-    const root = mkdtempSync(join(tmpdir(), "component-intent-audit-"));
+    const root = mkdtempSync(join(tmpdir(), "reuse-me-"));
     tempDirs.push(root);
     mkdirSync(join(root, ".git"));
     writeFixture(
@@ -163,7 +163,7 @@ describe("mode runners", () => {
   });
 
   it("reports limited repositories when no source extractor can produce facts", () => {
-    const root = mkdtempSync(join(tmpdir(), "component-intent-audit-"));
+    const root = mkdtempSync(join(tmpdir(), "reuse-me-"));
     tempDirs.push(root);
     mkdirSync(join(root, ".git"));
     writeFixture(root, "README.md", "# Notes");

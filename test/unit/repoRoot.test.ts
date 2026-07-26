@@ -15,7 +15,7 @@ import { defaultConfig } from "../../src/config/defaults";
 const tempDirs: string[] = [];
 
 function createTempDir(): string {
-  const directory = fs.mkdtempSync(join(tmpdir(), "component-intent-audit-"));
+  const directory = fs.mkdtempSync(join(tmpdir(), "reuse-me-"));
   tempDirs.push(directory);
   return directory;
 }
@@ -84,7 +84,7 @@ describe("resolveFallbackRoot", () => {
   });
 
   it("falls back to the starting path when nothing marks a root", () => {
-    const nestedPath = "/component-intent-audit-no-root/nested/deeper";
+    const nestedPath = "/reuse-me-no-root/nested/deeper";
 
     expect(resolveFallbackRoot(nestedPath)).toBe(nestedPath);
   });

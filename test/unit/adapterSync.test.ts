@@ -14,10 +14,10 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 // There is no build step to generate them, so the guard is the cheapest thing
 // that keeps them honest: one canonical file, and a test that fails when a
 // copy drifts.
-const CANONICAL_SKILL = "skills/component-intent-audit/SKILL.md";
+const CANONICAL_SKILL = "skills/reuse-me/SKILL.md";
 const SKILL_COPIES = [
-  ".swival/skills/component-intent-audit/SKILL.md",
-  ".openclaw/skills/component-intent-audit/SKILL.md"
+  ".swival/skills/reuse-me/SKILL.md",
+  ".openclaw/skills/reuse-me/SKILL.md"
 ];
 
 function read(path: string): string {

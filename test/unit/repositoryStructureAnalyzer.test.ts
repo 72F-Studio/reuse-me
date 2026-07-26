@@ -23,7 +23,7 @@ afterEach(() => {
 
 describe("RepositoryStructureAnalyzer", () => {
   it("returns generic repository data and path-level findings", () => {
-    const root = mkdtempSync(join(tmpdir(), "component-intent-audit-"));
+    const root = mkdtempSync(join(tmpdir(), "reuse-me-"));
     tempDirs.push(root);
     writeFixture(root, "app/src/main/kotlin/HomeScreen.kt");
     writeFixture(root, "core/src/main/kotlin/HomeScreen.kt");

@@ -17,13 +17,13 @@ the CLI.
 | pi | `pi-extension/`, `skills/` |
 | Hermes Agent | `plugin.yaml`, `__init__.py`, `skills/` |
 | Devin | `.devin-plugin/plugin.json`, `skills/` |
-| Cursor | `.cursor/rules/component-intent-audit.mdc` |
-| Windsurf | `.windsurf/rules/component-intent-audit.md` |
-| Cline | `.clinerules/component-intent-audit.md` |
-| Kiro | `.kiro/steering/component-intent-audit.md` |
+| Cursor | `.cursor/rules/reuse-me.mdc` |
+| Windsurf | `.windsurf/rules/reuse-me.md` |
+| Cline | `.clinerules/reuse-me.md` |
+| Kiro | `.kiro/steering/reuse-me.md` |
 | CodeWhale / VS Code Codex / Aider / Zed / generic agents | `AGENTS.md` |
 | Swival | `.swival/skills/`, `AGENTS.md` |
-| OpenClaw | `.openclaw/skills/component-intent-audit/` |
+| OpenClaw | `.openclaw/skills/reuse-me/` |
 | Agent rules marketplace | `.agents/rules/`, `.agents/plugins/marketplace.json` |
 
 ## Runtime Boundary
@@ -31,9 +31,9 @@ the CLI.
 Adapters do not reimplement analysis. They instruct the agent to run:
 
 ```bash
-component-intent-audit --health --json
-component-intent-audit --diff --json
+reuse-me --health --json
+reuse-me --diff --json
 ```
 
-The CLI must be available through `PATH`, `COMPONENT_INTENT_AUDIT_BIN`, or a
+The CLI must be available through `PATH`, `REUSE_ME_BIN`, or a
 known local checkout.

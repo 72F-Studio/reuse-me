@@ -5,7 +5,7 @@ import { defaultConfig } from "./defaults";
 import type { AnalyzerConfig } from "../model/config";
 
 // Single supported V1 config filename.
-export const CONFIG_FILENAME = "component-intent.json";
+export const CONFIG_FILENAME = "reuse-me.json";
 
 type LegacyUserConfig = {
   sharedComponentDirs?: string[];

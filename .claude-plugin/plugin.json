@@ -1,5 +1,5 @@
 {
-  "name": "component-intent-audit",
+  "name": "reuse-me",
   "version": "0.1.0",
   "description": "Audit repository health, declarations, usage, and component intent with deterministic static signals.",
   "author": {
