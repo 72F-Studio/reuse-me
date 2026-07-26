@@ -236,9 +236,8 @@ npm run benchmark:context  # context saved on real repositories (needs network)
 npx tsc --noEmit
 ```
 
-Design notes and research live in [docs/](docs). The architecture audit that
-drove the current rework is
-[docs/planning/PRODUCT_ARCHITECTURE_AUDIT.md](docs/planning/PRODUCT_ARCHITECTURE_AUDIT.md).
+Documentation lives in [docs/](docs): [prevention.md](docs/prevention.md) for
+the hooks, [agent-portability.md](docs/agent-portability.md) for the adapters.
 
 ## License
 
