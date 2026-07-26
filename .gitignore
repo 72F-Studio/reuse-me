@@ -3,6 +3,9 @@ __pycache__/
 dist/
 .benchmark-cache/
 
+# working documents, kept locally, deliberately not published
+docs/archive/
+
 .env
 .env.*
 
