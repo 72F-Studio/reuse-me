@@ -13,7 +13,21 @@ with no model calls.
 
 ## Before / after
 
-An agent writes a third screen that looks like this:
+An agent writes a third screen. The language changes nothing about the
+problem:
+
+```tsx
+// src/screens/Profile.tsx
+export function Profile() {
+  return (
+    <div>
+      <button className="rounded px-4 py-2" style={{ color: "#3B82F6" }}>
+        Profile
+      </button>
+    </div>
+  );
+}
+```
 
 ```kotlin
 // ui/screens/ProfileScreen.kt
@@ -28,16 +42,20 @@ fun ProfileScreen() {
 }
 ```
 
-`reuse-me --health` says:
+`reuse-me --health` says the same thing about each:
 
 ```
+Competing implementation: src/screens/Login.tsx, src/screens/Profile.tsx,
+  src/screens/Signup.tsx -> src/components/PrimaryButton.tsx (PrimaryButton),
+  confidence 0.8
+
 Competing implementation: ui/screens/LoginScreen.kt, ui/screens/ProfileScreen.kt,
   ui/screens/SignupScreen.kt -> ui/components/PrimaryButton.kt (PrimaryButton),
   confidence 0.8
 ```
 
-There is no Kotlin plugin. There is no Compose plugin. The same run finds the
-same story in SwiftUI, Flutter and React.
+One binary, no plugins, no per-language configuration. The same run finds the
+same story in Swift, Dart, Java, C#, Go, Python and Vue.
 
 ## Prevention, not just diagnosis
 
@@ -95,14 +113,14 @@ tags in [`benchmarks/corpus.json`](benchmarks/corpus.json):
 
 | Repository | Language | Files | Source | Report | Ratio |
 | --- | --- | ---: | ---: | ---: | ---: |
-| preact `10.25.4` | TypeScript / JavaScript | 238 | 1267K | 14K | 88.8x |
-| vue-core `v3.5.13` | TypeScript | 525 | 3898K | 26K | 152.8x |
+| preact `10.25.4` | TypeScript / JavaScript | 238 | 1267K | 15K | 87.2x |
+| vue-core `v3.5.13` | TypeScript | 525 | 3898K | 26K | 149.6x |
 | requests `v2.32.3` | Python | 36 | 368K | 10K | 38.0x |
-| okhttp `5.0.0-alpha.14` | Kotlin / Java | 549 | 4017K | 33K | 120.4x |
-| swift-composable-architecture `1.17.1` | Swift | 820 | 2273K | 54K | 42.3x |
+| okhttp `5.0.0-alpha.14` | Kotlin / Java | 549 | 4017K | 33K | 120.9x |
+| swift-composable-architecture `1.17.1` | Swift | 820 | 2273K | 24K | 94.7x |
 
-**Median 88.8x smaller across 5 repositories (range 38x–153x)**, 11.8MB of
-source summarised into 137K, under a second each.
+**Median 94.7x smaller across 5 repositories (range 38x–150x)**, 11.8MB of
+source summarised into 107K, under a second each.
 
 The denominator is every source file the analyzer can read — what an agent
 would otherwise open to answer the questions the report answers. READMEs,
@@ -134,12 +152,25 @@ Roles come from the import graph and from directory names matched anywhere in
 a path — `ui/components`, `lib/widgets`, `Sources/DesignSystem`, a top-level
 `components/`. Not from a hardcoded `src/components` prefix.
 
+References are not read from import statements alone. JavaScript, Python and
+Ruby require an import for every use, so an import-only graph describes them
+completely; Kotlin, Java, C#, Scala, Go and Swift do not, and a file using its
+neighbour in the same package writes no statement at all. Those references are
+counted from the scope itself, which is the difference between "this component
+has no callers" and "this analyzer speaks JavaScript". Imports of frameworks
+and standard libraries are classed as external rather than unresolved, so a
+repository is never judged on how many `androidx` or `react` names it could
+not find inside itself.
+
 ## The other half: tokens
 
 A duplicated button matters less if its colour was hardcoded in all four
 places to begin with. The same run reports design values written as literals:
 
 ```
+Token bypassed: #3b82f6 hardcoded in src/screens/Login.tsx,
+  src/screens/Profile.tsx, src/screens/Signup.tsx
+  but declared as --brand-primary
 Token bypassed: 0xff3b82f6 hardcoded in ui/screens/LoginScreen.kt,
   ui/screens/ProfileScreen.kt, ui/screens/SignupScreen.kt
   but declared as BrandPrimary

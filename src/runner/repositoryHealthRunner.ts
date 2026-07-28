@@ -213,7 +213,16 @@ function repositoryIntelligence(
   knowledge: RepositoryKnowledge,
   capabilities: CapabilityReport[]
 ): RepositoryIntelligenceReport {
-  const relationships = knowledge.relationships();
+  // Coverage is measured over imports that could have pointed inside this
+  // repository. Framework and standard-library imports are excluded: counting
+  // `androidx.compose.*` or `react` as failures made every Android, iOS and
+  // Java repository look like a broken graph, and the report then withheld
+  // conclusions it had the evidence to draw.
+  const relationships = knowledge
+    .relationships()
+    .filter(
+      (entry) => entry.origin !== "same-scope" && entry.resolution !== "external"
+    );
   const resolvedRelationships = relationships.filter(
     (entry) => entry.resolution === "resolved"
   ).length;

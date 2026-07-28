@@ -1,6 +1,7 @@
 import { basename, dirname, join, relative } from "node:path";
 
 import { readDirSafe } from "../fs/safeReaddir";
+import { versionedPaths } from "../fs/versionedPaths";
 import { languageForPath } from "../discovery/languageDetector";
 import type { RepositoryContext } from "../model/repository";
 import type {
@@ -75,6 +76,7 @@ export class RepositoryStructureAnalyzer {
 function walk(rootPath: string): { files: string[]; directories: string[] } {
   const files: string[] = [];
   const directories: string[] = [];
+  const versioned = versionedPaths(rootPath);
 
   function visit(directory: string): void {
     for (const entry of readDirSafe(directory)) {
@@ -86,9 +88,16 @@ function walk(rootPath: string): { files: string[]; directories: string[] } {
       const repositoryPath = normalizePath(relative(rootPath, absolutePath));
 
       if (entry.isDirectory()) {
+        if (versioned !== null && !versioned.hasDirectory(repositoryPath)) {
+          continue;
+        }
+
         directories.push(repositoryPath);
         visit(absolutePath);
-      } else if (entry.isFile()) {
+      } else if (
+        entry.isFile() &&
+        (versioned === null || versioned.hasFile(repositoryPath))
+      ) {
         files.push(repositoryPath);
       }
     }

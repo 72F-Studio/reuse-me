@@ -40,7 +40,16 @@ export class UnusedAbstractionDetector {
 // Absence of evidence is only evidence of absence when the graph is good
 // enough to have shown the references had they existed.
 export function hasReliableGraph(knowledge: RepositoryKnowledge): boolean {
-  const relationships = knowledge.relationships();
+  // Only imports that could have pointed inside this repository say anything
+  // about how well the graph resolved. An import of a framework was never
+  // going to resolve here, and same-scope references were not imports at all.
+  const relationships = knowledge
+    .relationships()
+    .filter(
+      (relationship) =>
+        relationship.origin !== "same-scope" &&
+        relationship.resolution !== "external"
+    );
 
   if (relationships.length === 0) {
     return false;

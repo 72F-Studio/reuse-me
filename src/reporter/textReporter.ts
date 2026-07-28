@@ -43,6 +43,13 @@ function renderInventory(result: InventoryResult): string {
           `  ${component.name} — ${component.path} (${component.referenceCount} references)`
       )
     );
+    lines.push(
+      ...truncationNote(
+        result.components.length,
+        result.metadata.componentCount,
+        "shared components, most referenced first"
+      )
+    );
   }
 
   if (result.tokens.length === 0) {
@@ -56,9 +63,29 @@ function renderInventory(result: InventoryResult): string {
         (token) => `  ${token.name} = ${token.value} — ${token.sourcePath}`
       )
     );
+    lines.push(
+      ...truncationNote(
+        result.tokens.length,
+        result.metadata.tokenCount,
+        "design tokens"
+      )
+    );
   }
 
   return lines.join("\n");
+}
+
+// A list that was cut has to say so. Silently showing 40 of 2000 reads as "the
+// repository has 40", which is exactly the wrong conclusion to hand something
+// that is about to decide whether a component already exists.
+function truncationNote(
+  shown: number,
+  total: number,
+  subject: string
+): string[] {
+  return total > shown
+    ? [`  … showing ${shown} of ${total} ${subject}.`]
+    : [];
 }
 
 function renderChange(result: ChangeAnalysisResult): string {

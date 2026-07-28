@@ -17,13 +17,29 @@ moment it is about to build something.
 ```
 $ reuse-me --inventory
 Shared components — reuse these instead of re-implementing:
-  Button — src/components/Button.tsx (3 references)
   Card — src/components/Card.tsx (7 references)
+  Button — src/components/Button.tsx (3 references)
 
 Design tokens — reference these instead of hardcoding values:
   brand-primary = #3b82f6 — src/styles/variables.css
   spacing-small = 8.dp — ui/theme/Theme.kt
 ```
+
+Only exported declarations are listed, ranked by how many files reference
+them, and cut to the top slice. A file's role belongs to the file, so every
+declaration inside a shared file inherits "shared", private helpers included;
+listing all of them turned a context budget into a codebase index. When the
+list is cut it says so, with the repository-wide total:
+
+```
+  … showing 40 of 272 shared components, most referenced first.
+```
+
+Files the repository ignores are not analyzed in any mode. What Git tracks
+(submodules included) plus what is untracked but not ignored is the whole
+input, so a vendored checkout or a benchmark cache never shows up as
+first-party code. Outside a Git repository, each walker falls back to its own
+list of directories to skip.
 
 An agent cannot reuse a component it does not know exists, and asking it to
 read the whole component directory costs more context than it saves.

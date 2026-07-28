@@ -36,21 +36,48 @@ function renderInventory(result: InventoryResult): string {
     "",
     ...(result.components.length === 0
       ? ["No shared components found."]
-      : result.components.map(
-          (component) =>
-            `- \`${component.name}\` — ${component.path} (${component.referenceCount} references)`
-        )),
+      : [
+          ...result.components.map(
+            (component) =>
+              `- \`${component.name}\` — ${component.path} (${component.referenceCount} references)`
+          ),
+          ...truncationNote(
+            result.components.length,
+            result.metadata.componentCount,
+            "shared components, most referenced first"
+          )
+        ]),
     "",
     "### Design tokens",
     "",
     ...(result.tokens.length === 0
       ? ["No design tokens found."]
-      : result.tokens.map(
-          (token) =>
-            `- \`${token.name}\` = \`${token.value}\` — ${token.sourcePath}`
-        )),
+      : [
+          ...result.tokens.map(
+            (token) =>
+              `- \`${token.name}\` = \`${token.value}\` — ${token.sourcePath}`
+          ),
+          ...truncationNote(
+            result.tokens.length,
+            result.metadata.tokenCount,
+            "design tokens"
+          )
+        ]),
     ""
   ].join("\n");
+}
+
+// A cut list has to say it was cut. Showing 40 of 1108 without a word reads as
+// "the repository has 40", which is the wrong conclusion to hand something
+// deciding whether a component already exists.
+function truncationNote(
+  shown: number,
+  total: number,
+  subject: string
+): string[] {
+  return total > shown
+    ? ["", `_Showing ${shown} of ${total} ${subject}._`]
+    : [];
 }
 
 function renderChange(result: ChangeAnalysisResult): string {

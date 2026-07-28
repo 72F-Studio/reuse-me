@@ -4,6 +4,7 @@ import { JsonReporter } from "../../src/reporter/jsonReporter";
 import { MarkdownReporter } from "../../src/reporter/markdownReporter";
 import { TextReporter } from "../../src/reporter/textReporter";
 import type { ChangeAnalysisResult } from "../../src/model/changeAnalysisResult";
+import type { InventoryResult } from "../../src/model/inventoryResult";
 import type { RepositoryHealthResult } from "../../src/model/repositoryHealthResult";
 
 const capabilities = [
@@ -245,6 +246,29 @@ describe("reporters", () => {
     );
     expect(new MarkdownReporter().render(limitedHealthResult)).toContain(
       "Unavailable Intelligence"
+    );
+  });
+
+  // A cut list that does not say it was cut reads as the whole repository.
+  it("says so when the inventory shows only part of what was found", () => {
+    const truncated: InventoryResult = {
+      mode: "inventory",
+      components: [{ path: "src/components/Card.tsx", name: "Card", referenceCount: 7 }],
+      tokens: [
+        { name: "brand", value: "#3b82f6", sourcePath: "src/styles/variables.css" }
+      ],
+      metadata: { componentCount: 108, tokenCount: 1 }
+    };
+
+    expect(new TextReporter().render(truncated)).toContain(
+      "showing 1 of 108 shared components"
+    );
+    expect(new MarkdownReporter().render(truncated)).toContain(
+      "Showing 1 of 108 shared components"
+    );
+    // The token list was complete, so it says nothing.
+    expect(new TextReporter().render(truncated)).not.toContain(
+      "design tokens."
     );
   });
 });

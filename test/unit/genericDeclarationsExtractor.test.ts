@@ -86,4 +86,59 @@ describe("GenericDeclarationsExtractor", () => {
       1
     );
   });
+
+  // Kotlin, Java, C#, Scala, Go and Swift let a file use a sibling in the same
+  // package with no import statement. Counting imports alone reported those
+  // repositories as having almost no internal references.
+  it("counts a same-package reference that no import statement records", () => {
+    const root = mkdtempSync(join(tmpdir(), "reuse-me-scope-"));
+    tempDirs.push(root);
+    mkdirSync(join(root, ".git"));
+    writeFixture(
+      root,
+      "app/src/main/kotlin/com/example/ui/PrimaryButton.kt",
+      "package com.example.ui\n\nclass PrimaryButton\n"
+    );
+    writeFixture(
+      root,
+      "app/src/main/kotlin/com/example/ui/LoginScreen.kt",
+      "package com.example.ui\n\nclass LoginScreen {\n    val button = PrimaryButton()\n}\n"
+    );
+
+    const result = new KnowledgePipelineRunner().construct(root);
+
+    if (result.status !== "ready") {
+      throw new Error("Expected ready repository knowledge");
+    }
+
+    expect(
+      result.knowledge.usageForPath(
+        "app/src/main/kotlin/com/example/ui/PrimaryButton.kt"
+      )?.fileReferenceCount
+    ).toBe(1);
+  });
+
+  it("does not count a framework import as an unresolved repository import", () => {
+    const root = mkdtempSync(join(tmpdir(), "reuse-me-external-"));
+    tempDirs.push(root);
+    mkdirSync(join(root, ".git"));
+    writeFixture(
+      root,
+      "app/src/main/kotlin/com/example/ui/Screen.kt",
+      "package com.example.ui\n\nimport androidx.compose.material3.Button\n\nclass Screen\n"
+    );
+
+    const result = new KnowledgePipelineRunner().construct(root);
+
+    if (result.status !== "ready") {
+      throw new Error("Expected ready repository knowledge");
+    }
+
+    expect(
+      result.knowledge
+        .relationships()
+        .find((relationship) => relationship.sourceModule.startsWith("androidx"))
+        ?.resolution
+    ).toBe("external");
+  });
 });

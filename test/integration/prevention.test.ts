@@ -80,6 +80,56 @@ describe("inventory mode", () => {
     ]);
   });
 
+  it("ranks by reference count and caps the list, but reports the real total", () => {
+    // The inventory is injected into a coding agent's context before every
+    // write, so an unbounded list is not a cosmetic problem: on a real
+    // repository it ran to thousands of entries.
+    const files: Record<string, string> = {};
+
+    for (let index = 0; index < 60; index += 1) {
+      files[`src/components/Widget${index}.tsx`] =
+        `export function Widget${index}() {\n  return <div />;\n}\n`;
+    }
+
+    files["src/components/Hub.tsx"] = `export function Hub() {
+  return <div />;
+}
+`;
+    files["src/screens/Home.tsx"] = `import { Hub } from "../components/Hub";
+
+export function Home() {
+  return <Hub />;
+}
+`;
+
+    const result = new InventoryRunner().run(knowledgeFor(createRepo(files)));
+
+    expect(result.components).toHaveLength(40);
+    expect(result.metadata.componentCount).toBe(61);
+    expect(result.components[0]?.name).toBe("Hub");
+  });
+
+  it("does not list a file's private helpers as reusable components", () => {
+    const result = new InventoryRunner().run(
+      knowledgeFor(
+        createRepo({
+          "src/components/Button.tsx": `function classes() {
+  return "btn";
+}
+
+export function Button() {
+  return <button className={classes()} />;
+}
+`
+        })
+      )
+    );
+
+    expect(result.components.map((component) => component.name)).toEqual([
+      "Button"
+    ]);
+  });
+
   it("does not list local screens as reusable components", () => {
     const result = new InventoryRunner().run(knowledgeFor(createRepo(REACT_REPO)));
 

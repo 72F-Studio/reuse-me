@@ -1,6 +1,7 @@
 import { join, relative } from "node:path";
 
 import { readDirSafe } from "../../fs/safeReaddir";
+import { versionedPaths, type VersionedPaths } from "../../fs/versionedPaths";
 import { roleHintsForPath } from "../../discovery/roleHints";
 import type { RepositoryContext } from "../../model/repository";
 import type { SourceFileCandidate } from "./sourceFileCandidate";
@@ -22,7 +23,11 @@ export class SourceFileDiscovery {
   discover(context: RepositoryContext): SourceFileCandidate[] {
     const candidates: SourceFileCandidate[] = [];
 
-    for (const absolutePath of walkFiles(context.rootPath)) {
+    for (const absolutePath of walkFiles(
+      context.rootPath,
+      context.rootPath,
+      versionedPaths(context.rootPath)
+    )) {
       const repositoryPath = normalizePath(
         relative(context.rootPath, absolutePath)
       );
@@ -66,7 +71,11 @@ const IGNORED_DIRECTORIES = new Set([
   "vendor"
 ]);
 
-function walkFiles(directory: string): string[] {
+function walkFiles(
+  rootPath: string,
+  directory: string,
+  versioned: VersionedPaths | null
+): string[] {
   const files: string[] = [];
 
   for (const entry of readDirSafe(directory)) {
@@ -75,10 +84,18 @@ function walkFiles(directory: string): string[] {
     }
 
     const absolutePath = join(directory, entry.name);
+    const repositoryPath = normalizePath(relative(rootPath, absolutePath));
 
     if (entry.isDirectory()) {
-      files.push(...walkFiles(absolutePath));
-    } else if (entry.isFile()) {
+      if (versioned !== null && !versioned.hasDirectory(repositoryPath)) {
+        continue;
+      }
+
+      files.push(...walkFiles(rootPath, absolutePath, versioned));
+    } else if (
+      entry.isFile() &&
+      (versioned === null || versioned.hasFile(repositoryPath))
+    ) {
       files.push(absolutePath);
     }
   }

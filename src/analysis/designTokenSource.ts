@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { readFileSync } from "node:fs";
 
 import { readDirSafe } from "../fs/safeReaddir";
+import { versionedPaths, type VersionedPaths } from "../fs/versionedPaths";
 import type { RepositoryContext } from "../model/repository";
 
 // Where a repository declares its design tokens, and what it declares.
@@ -61,7 +62,7 @@ const ANDROID_RESOURCE =
 export function findDesignTokens(context: RepositoryContext): DesignToken[] {
   const tokens: DesignToken[] = [];
 
-  for (const path of tokenFilePaths(context.rootPath)) {
+  for (const path of tokenFilePaths(context.rootPath, versionedPaths(context.rootPath))) {
     let source: string;
 
     try {
@@ -82,21 +83,32 @@ export function findDesignTokens(context: RepositoryContext): DesignToken[] {
   return tokens;
 }
 
-function tokenFilePaths(rootPath: string): string[] {
+function tokenFilePaths(
+  rootPath: string,
+  versioned: VersionedPaths | null
+): string[] {
   const paths: string[] = [];
 
   function visit(directory: string, prefix: string): void {
     for (const entry of readDirSafe(directory)) {
+      const repositoryPath = `${prefix}${entry.name}`;
+
       if (entry.isDirectory()) {
-        if (!IGNORED_DIRECTORIES.has(entry.name)) {
-          visit(join(directory, entry.name), `${prefix}${entry.name}/`);
+        if (
+          !IGNORED_DIRECTORIES.has(entry.name) &&
+          (versioned === null || versioned.hasDirectory(repositoryPath))
+        ) {
+          visit(join(directory, entry.name), `${repositoryPath}/`);
         }
 
         continue;
       }
 
-      if (TOKEN_FILE_PATTERNS.some((pattern) => pattern.test(entry.name))) {
-        paths.push(`${prefix}${entry.name}`);
+      if (
+        TOKEN_FILE_PATTERNS.some((pattern) => pattern.test(entry.name)) &&
+        (versioned === null || versioned.hasFile(repositoryPath))
+      ) {
+        paths.push(repositoryPath);
       }
     }
   }

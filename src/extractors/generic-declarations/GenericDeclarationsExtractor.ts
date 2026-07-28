@@ -3,6 +3,7 @@ import { basename, dirname, extname, join, normalize, relative } from "node:path
 import { dirname as posixDirname, join as posixJoin, normalize as posixNormalize } from "node:path/posix";
 
 import { readDirSafe } from "../../fs/safeReaddir";
+import { versionedPaths } from "../../fs/versionedPaths";
 import { languageForPath } from "../../discovery/languageDetector";
 import { roleHintsForPath } from "../../discovery/roleHints";
 import { extractGenericFeatures } from "./genericFeatureExtractor";
@@ -107,6 +108,9 @@ interface ParsedFile {
   packageName?: string;
   moduleName: string;
   facts: RepositoryFacts;
+  // Every identifier the file mentions, which is how a reference to a sibling
+  // in the same package is found in languages that need no import for it.
+  identifiers: Set<string>;
 }
 
 interface DeclarationWithLine {
@@ -150,6 +154,7 @@ export class GenericDeclarationsExtractor implements RepositoryExtractor {
 
 function discoverSourceFiles(context: RepositoryContext): string[] {
   const files: string[] = [];
+  const versioned = versionedPaths(context.rootPath);
 
   function visit(directory: string): void {
     for (const entry of readDirSafe(directory)) {
@@ -161,8 +166,16 @@ function discoverSourceFiles(context: RepositoryContext): string[] {
       const repositoryPath = normalizePath(relative(context.rootPath, absolutePath));
 
       if (entry.isDirectory()) {
+        if (versioned !== null && !versioned.hasDirectory(repositoryPath)) {
+          continue;
+        }
+
         visit(absolutePath);
-      } else if (entry.isFile() && isSupportedSourcePath(repositoryPath, context)) {
+      } else if (
+        entry.isFile() &&
+        isSupportedSourcePath(repositoryPath, context) &&
+        (versioned === null || versioned.hasFile(repositoryPath))
+      ) {
         files.push(repositoryPath);
       }
     }
@@ -207,6 +220,7 @@ function parseFile(context: RepositoryContext, path: string): ParsedFile {
     language,
     packageName,
     moduleName: moduleNameForPath(path),
+    identifiers: new Set(stripped.match(/[A-Za-z_]\w*/gu) ?? []),
     facts: {
       path,
       imports: extractImports(stripped, language.id),
@@ -336,10 +350,13 @@ function analyzeRelationships(files: ParsedFile[]): RelationshipFact[] {
         importKind: importFact.kind,
         localName: importFact.localName,
         importedName: importFact.importedName,
+        origin: "import",
         ...resolved
       });
     }
   }
+
+  relationships.push(...sameScopeRelationships(files, relationships));
 
   return relationships.sort((a, b) =>
     `${a.importerPath}:${a.sourceModule}:${a.localName}`.localeCompare(
@@ -348,18 +365,122 @@ function analyzeRelationships(files: ParsedFile[]): RelationshipFact[] {
   );
 }
 
+// References that no import statement records.
+//
+// In Kotlin, Java, C#, Scala, Go and Swift a file uses its neighbours without
+// importing them: same package, same module, no statement to read. An
+// import-only graph therefore reports an Android or iOS codebase as having
+// almost no internal references, which then suppresses every conclusion that
+// depends on reference counts. Two files in one scope, one naming a type the
+// other declares, is the same evidence an import would have given.
+//
+// A name is counted once per referencing file, matching what one import
+// statement would have contributed, and only when exactly one file in the
+// scope declares it — an ambiguous name is no evidence at all. A file that
+// already imported the target is skipped: Kotlin permits importing a
+// same-package name explicitly, and counting both readings would double it.
+function sameScopeRelationships(
+  files: ParsedFile[],
+  imported: RelationshipFact[]
+): RelationshipFact[] {
+  const alreadyRelated = new Set(
+    imported
+      .filter((relationship) => relationship.targetPath !== undefined)
+      .map((relationship) => scopeKey(relationship.importerPath, relationship.targetPath ?? ""))
+  );
+  const declaringFiles = new Map<string, ParsedFile[]>();
+
+  for (const file of files) {
+    for (const declaration of file.facts.declarations) {
+      if (declaration.name !== undefined) {
+        append(declaringFiles, scopeKey(scopeOf(file), declaration.name), file);
+      }
+    }
+  }
+
+  const relationships: RelationshipFact[] = [];
+
+  for (const file of files) {
+    const scope = scopeOf(file);
+    const declaredHere = new Set(
+      file.facts.declarations
+        .map((declaration) => declaration.name)
+        .filter((name): name is string => name !== undefined)
+    );
+
+    for (const name of file.identifiers) {
+      if (declaredHere.has(name)) {
+        continue;
+      }
+
+      const targets = declaringFiles.get(scopeKey(scope, name)) ?? [];
+
+      if (
+        targets.length !== 1 ||
+        alreadyRelated.has(scopeKey(file.path, targets[0].path))
+      ) {
+        continue;
+      }
+
+      relationships.push({
+        importerPath: file.path,
+        sourceModule: scope,
+        importKind: "named",
+        localName: name,
+        importedName: name,
+        origin: "same-scope",
+        resolution: "resolved",
+        targetPath: targets[0].path,
+        targetExportName: name,
+        targetDeclarationName: name
+      });
+    }
+  }
+
+  return relationships;
+}
+
+// The unit inside which a file may reference a neighbour without importing it.
+// A declared package says so exactly. Where a language has no package
+// statement — Swift, Dart, C, C++, and the JavaScript family — the directory
+// is the conservative floor: it under-counts a Swift module spanning
+// directories rather than inventing references across unrelated code.
+//
+// ponytail: directory floor for package-less languages. Widen to the built
+// module only if a repository shows it is needed, which needs a build-file
+// reader this analyzer deliberately does not have.
+function scopeOf(file: ParsedFile): string {
+  return file.packageName ?? posixDirname(file.path);
+}
+
+// Works for both separators a module name arrives with: `com.example.ui` and
+// `components/Button`.
+function rootSegment(name: string): string {
+  return name.split(/[./\\]/u)[0] ?? name;
+}
+
+function scopeKey(scope: string, name: string): string {
+  return `${scope} ${name}`;
+}
+
 class GenericRelationshipResolver {
   private readonly filesByPath = new Map<string, ParsedFile>();
   private readonly declarationsByQualifiedName = new Map<string, ParsedFile[]>();
   private readonly modulesByName = new Map<string, ParsedFile[]>();
+  // First segment of every package and module the repository defines. An
+  // import whose own first segment is not among them names something the
+  // repository does not contain.
+  private readonly localRoots = new Set<string>();
 
   constructor(files: ParsedFile[]) {
     for (const file of files) {
       this.filesByPath.set(file.path, file);
       append(this.modulesByName, file.moduleName, file);
+      this.localRoots.add(rootSegment(file.moduleName));
 
       if (file.packageName !== undefined) {
         append(this.modulesByName, file.packageName, file);
+        this.localRoots.add(rootSegment(file.packageName));
       }
 
       for (const declaration of file.facts.declarations) {
@@ -407,9 +528,27 @@ class GenericRelationshipResolver {
       return this.toResolvedRelationship(moduleTargets[0], importFact);
     }
 
+    if (moduleTargets.length > 1) {
+      return { resolution: "ambiguous" };
+    }
+
     return {
-      resolution: moduleTargets.length > 1 ? "ambiguous" : "unresolved"
+      resolution: this.isRepositoryLocal(importFact.sourceModule)
+        ? "unresolved"
+        : "external"
     };
+  }
+
+  // Whether an import could name something in this repository at all. A
+  // relative path always could. A qualified name could only if the repository
+  // declares its first segment: `com.…` in a repository full of `com.…`
+  // packages is a candidate, `androidx.…` or `react` is not.
+  private isRepositoryLocal(sourceModule: string): boolean {
+    return (
+      sourceModule.startsWith(".") ||
+      sourceModule.startsWith("/") ||
+      this.localRoots.has(rootSegment(sourceModule))
+    );
   }
 
   private resolvePathImport(
